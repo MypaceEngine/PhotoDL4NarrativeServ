@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Photo DownLoader of Narrative Service</string>
+
+    <!-- Strings related to login -->
+
+    <string name="desc_narrative_Auth">For downloading photo from Narrative Service, Authentication is required. Click and authorize this application.</string>
+    <string name="desc_narrative_Btn">Authentication on Narrative Service.</string>
+    <string name="desc_google_Btn">Authorization on google Account.</string>
+    <string name="desc_enable_resync_oncel">Enable to synchronized on  cellular network.</string>
+    <string name="desc_enable_resync_tolocal">Enable to download to local storage. Turing on is not recommended, cellular phone storage volume is not so large.</string>
+    <string name="guide_local_storagepath">Local Folder  Path: </string>
+    <string name="guide_local_gotolocal">Go to download folder.</string>
+    <string name="desc_enable_google_photo">Enable to resynchronized to google photo of specified google account.</string>
+    <string name="desc_cancel_Auth_google">For uploading photo to google photo, Authenticating google account is needed.</string>
+    <string name="desc_enable_nas">Enable to resynchronized to network attached storage.</string>
+    <string name="guide_local_setaccount">Register account</string>
+
+    <string name="prompt_email">User ID</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+</resources>
