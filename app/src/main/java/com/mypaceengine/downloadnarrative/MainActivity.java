@@ -10,6 +10,8 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -84,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
     private Button narrativeBtn;
     private Button googleAuthBtn;
     private Button localBtn;
+    private Button syncBtn;
 
     private Switch celSwitch;
     private Switch googleSwitch;
@@ -97,98 +100,24 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
      */
     private GoogleApiClient client;
 
-    private SyncService syncService;
-
     private String narrativeKey;
 
     private String local_filepath;
 
     static final int GOOGLE_REQUEST_CODE=00000001;
 
-    private ServiceConnection mSampleServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            SyncService.LocalBinder binder = (SyncService.LocalBinder)service;
-            syncService = binder.getService();
-            if(narrativeKey!=null){
-                syncService.setNarrativeKey(narrativeKey);
-            }
-            celSwitch.setChecked(syncService.getEnableCelSync());
-            googleSwitch.setChecked(syncService.getEnableGoogleSync());
-            localSwitch.setChecked(syncService.getEnableLocalSync());
-
-            googleAuthBtn.setEnabled(syncService.getEnableGoogleSync());
-
-            narrativeBtn.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                    Intent intent = new Intent(getApplicationContext(), WebActivity.class);
-                    intent.putExtra("URL", "https://narrativeapp.com/oauth2/authorize/?response_type=code&client_id="+Conf.NarrativeClient_ID);
-                    startActivity(intent);
-
-                }
-            });
-            googleAuthBtn.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent =AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"},
-                            false, null, null, null, null);
-                    startActivityForResult(intent, MainActivity.GOOGLE_REQUEST_CODE);
-                }
-            });
-
-            localSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    syncService.setEnableLocalSync(isChecked);
-                    syncService.resetTask();
-//                localBtn.setEnabled(isChecked);
-
-                }
-
-            });
-            googleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    syncService.setEnableGoogleSync(isChecked);
-
-                    googleAuthBtn.setEnabled(isChecked);
-                    syncService.resetTask();
-                }
-
-            });
-            celSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    syncService.setEnableCelSync(isChecked);
-                    syncService.resetTask();
-                }
-
-            });
-
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-        }
-    };
-
-
+    DataUtil dataUtil=null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        dataUtil=new DataUtil(this);
         setContentView(com.mypaceengine.downloadnarrative.R.layout.activity_main);
-
-        Intent intentSrv = new Intent(getApplicationContext(), SyncService.class);
-        bindService(intentSrv, mSampleServiceConnection, Context.BIND_AUTO_CREATE);
 
         narrativeBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.narrative_authorize_button);
 
-
-
         googleAuthBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.google_authorizeBtn);
 
+        syncBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.startSyncBtn);
 
         local_filepath=getApplicationContext().getExternalFilesDir("photos").getAbsolutePath();
 
@@ -207,52 +136,107 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
             }
         });
 
+        syncBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                registerJobSchedule();
+            }
+        });
 
         celSwitch=(Switch) findViewById(com.mypaceengine.downloadnarrative.R.id.enable_cell_switch);
 
-
-
         googleSwitch=(Switch) findViewById(com.mypaceengine.downloadnarrative.R.id.enable_google_switch);
-
 
         localSwitch=(Switch) findViewById(com.mypaceengine.downloadnarrative.R.id.enable_local_swicth);
 
-        // Set up the login form.
-      /*  mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
-        populateAutoComplete();
-
-        mPasswordView = (EditText) findViewById(R.id.password);
-        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == R.id.login || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                attemptLogin();
-            }
-        });
-*/
         mLoginFormView = findViewById(com.mypaceengine.downloadnarrative.R.id.login_form);
         mProgressView = findViewById(com.mypaceengine.downloadnarrative.R.id.login_progress);
+
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        if(narrativeKey!=null){
+            dataUtil.setNarrativeKey(narrativeKey);
+        }
+        celSwitch.setChecked(dataUtil.getEnableCelSync());
+        googleSwitch.setChecked(dataUtil.getEnableGoogleSync());
+        localSwitch.setChecked(dataUtil.getEnableLocalSync());
+
+
+
+        narrativeBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent intent = new Intent(getApplicationContext(), WebActivity.class);
+                intent.putExtra("URL", "https://narrativeapp.com/oauth2/authorize/?response_type=code&client_id="+Conf.NarrativeClient_ID);
+                startActivity(intent);
+
+            }
+        });
+        googleAuthBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent =AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"},
+                        false, null, null, null, null);
+                startActivityForResult(intent, MainActivity.GOOGLE_REQUEST_CODE);
+            }
+        });
+
+        localSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                dataUtil.setEnableLocalSync(isChecked);
+                treatBtn();
+            }
+
+        });
+        googleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                dataUtil.setEnableGoogleSync(isChecked);
+                treatBtn();
+            }
+
+        });
+        celSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                dataUtil.setEnableCelSync(isChecked);
+            }
+
+        });
+        treatBtn();
     }
+
+    public void treatBtn(){
+        syncBtn.setEnabled((dataUtil.getEnableGoogleSync())||(dataUtil.getEnableLocalSync()));
+        googleAuthBtn.setEnabled(dataUtil.getEnableGoogleSync());
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // Unbind
-        unbindService(mSampleServiceConnection);
+    }
+
+    public void registerJobSchedule(){
+        int netType=JobInfo.NETWORK_TYPE_UNMETERED;
+        if(dataUtil.getEnableCelSync()){
+            netType= JobInfo.NETWORK_TYPE_ANY;
+        }
+        ComponentName mServiceName= new ComponentName(this, SyncJobService.class);
+        JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        JobInfo jobInfo = new JobInfo.Builder(1, mServiceName)
+                .setMinimumLatency(1 * 1000)
+                .setOverrideDeadline(60 * 1000)
+                .setRequiredNetworkType(netType)
+                .setPersisted(true)
+                .setRequiresDeviceIdle(true)
+                .setRequiresCharging(true)
+                .build();
+        scheduler.schedule(jobInfo);
     }
 
     @Override
@@ -271,7 +255,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
                                     String accountName = bundle.getString(AccountManager.KEY_ACCOUNT_NAME);
                                     String accountType = bundle.getString(AccountManager.KEY_ACCOUNT_TYPE);
                                     String authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                                    syncService.setGoogleAccounty(accountName);
+                                    dataUtil.setGoogleAccounty(accountName);
                                    // Log.d(accountName, accountType);
                                    // Log.d("Auth!", authToken);
                                 } catch (OperationCanceledException e) {

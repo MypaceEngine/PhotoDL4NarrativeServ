@@ -21,7 +21,6 @@ public class GSPContainer implements Comparable{
     String street;
     double latitude;
     double longitude;
-    Context context;
     String uuid;
     boolean gpsAvailable=false;
 
@@ -29,13 +28,12 @@ public class GSPContainer implements Comparable{
         init( _context, startDateStr,  endDateStr,  _country,  _city,  _street, _latitude, _longitude,_gpsAvailable,_uuid);
     }
 
-    public void init(Context _context,String startDateStr, String endDateStr, String _country, String _city, String _street, double _latitude, double _longitude,boolean _gpsAvailable,String _uuid)throws Exception {
-        startCal = SyncTask.cnvCalender(startDateStr);
-        endCal = SyncTask.cnvCalender(endDateStr);
+    public void init(Context context,String startDateStr, String endDateStr, String _country, String _city, String _street, double _latitude, double _longitude,boolean _gpsAvailable,String _uuid)throws Exception {
+        startCal = CnvUtil.cnvCalender(startDateStr);
+        endCal = CnvUtil.cnvCalender(endDateStr);
         country = _country;
         city = _city;
         street = _street;
-        context = _context;
         uuid=_uuid;
         if(_gpsAvailable){
             Log.d("GPS Position","Defined Latitude:"+_latitude+" Longitude:"+_longitude);

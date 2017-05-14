@@ -12,14 +12,6 @@
 
     <!-- Login progress -->
 
-    <ProgressBar
-        android:id="@+id/login_progress"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:visibility="gone" />
-
     <ScrollView
         android:id="@+id/login_form"
         android:layout_width="match_parent"
@@ -30,23 +22,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
             <TextView
+                android:id="@+id/desc_narrative_textView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/desc_narrative_Auth"
-                android:id="@+id/desc_narrative_textView"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textColor="@color/font" />
 
             <Button
+                android:id="@+id/narrative_authorize_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/desc_narrative_Btn"
-                android:id="@+id/narrative_authorize_button"
-                android:layout_gravity="center_horizontal" />
-
-
-
+                android:layout_gravity="center_horizontal"
+                android:text="@string/desc_narrative_Btn" />
 
 
             <Space
@@ -55,14 +45,13 @@
                 android:layout_gravity="center_horizontal" />
 
 
-
             <Switch
+                android:id="@+id/enable_cell_switch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:text="@string/desc_enable_resync_oncel"
-                android:id="@+id/enable_cell_switch"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:layout_gravity="center_horizontal" />
+                android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <Space
                 android:layout_width="match_parent"
@@ -70,22 +59,25 @@
                 android:layout_gravity="center_horizontal" />
 
             <Switch
+                android:id="@+id/enable_local_swicth"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/desc_enable_resync_tolocal"
-                android:id="@+id/enable_local_swicth" />
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="5dp"
                 android:layout_gravity="center_horizontal" />
+
             <TextView
+                android:id="@+id/localpath_lbl"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/guide_local_storagepath"
-                android:textColor="@color/font"
-                android:id="@+id/localpath_lbl" />
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="@color/font" />
+
             <Button
                 android:id="@+id/localfolder_btn"
                 style="?android:textAppearanceSmall"
@@ -101,30 +93,43 @@
                 android:layout_gravity="center_horizontal" />
 
             <Switch
+                android:id="@+id/enable_google_switch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/desc_enable_google_photo"
-                android:id="@+id/enable_google_switch" />
+                android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <Button
+                android:id="@+id/google_authorizeBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/desc_google_Btn"
-                android:id="@+id/google_authorizeBtn"
-                android:layout_gravity="center_horizontal" />
+                android:layout_gravity="center_horizontal"
+                android:text="@string/desc_google_Btn" />
 
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="15dp"
+                android:layout_height="35dp"
                 android:layout_gravity="center_horizontal" />
 
-
+            <Button
+                android:id="@+id/startSyncBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="@string/desc_Sync_Btn" />
 
 
         </LinearLayout>
     </ScrollView>
+
+    <ProgressBar
+        android:id="@+id/login_progress"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
 
 
 </LinearLayout>
