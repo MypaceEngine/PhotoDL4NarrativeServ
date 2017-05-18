@@ -12,6 +12,7 @@ import android.util.Xml;
 
 import com.google.gdata.client.photos.PicasawebService;
 import com.google.gdata.data.PlainTextConstruct;
+import com.google.gdata.data.media.MediaFileSource;
 import com.google.gdata.data.photos.AlbumEntry;
 import com.google.gdata.data.photos.AlbumFeed;
 import com.google.gdata.data.photos.GphotoEntry;
@@ -30,6 +31,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -43,38 +45,32 @@ import java.util.Map;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public abstract class Job_Google_Abstract extends AbstractJobN{
+public abstract class Job_Google_Abstract extends AbstractJobN implements Serializable {
 
     private static final String API_PREFIX
             = "https://picasaweb.google.com/data/feed/api/user/default";
-    public AlbumEntry getAlbumAndCreate(String name, String description) throws Exception {
+    static  AlbumEntry targetAlbum=null;
+    public AlbumEntry getTargetAlbum() throws Exception {
+        if(targetAlbum!=null){
+            return targetAlbum;
+        }
         List<AlbumEntry> albums=GoogleUtil.getAlbum(GoogleUtil.getPicasaService(service));
-        AlbumEntry result=null;
         if(albums!=null) {
+            if(albums.size()>0){
+                targetAlbum=albums.get(0);
+            }
             for (AlbumEntry entry : albums) {
-                if(name.equals(entry.getTitle().getPlainText())){
-                    result=entry;
+                if("Auto Backup".equals(entry.getTitle().getPlainText())){
+                    targetAlbum=entry;
                     break;
                 }
             }
         }
-        if(result==null) {
-            result = new AlbumEntry();
-            result.setName(name);
-            result.setTitle(new PlainTextConstruct(name));
-            result.setDescription(new PlainTextConstruct(description));
-            if (GoogleUtil.getPicasaService(service) != null) {
-                result = GoogleUtil.getPicasaService(service).insert(new URL(API_PREFIX), result);
-            }
-            if (albums != null) {
-                albums.add(result);
-            }
-        }
-        return result;
+        return targetAlbum;
     }
     List<AlbumEntry> albums=null;
 
-    Map<String ,List<PhotoEntry>> photoMap=null;
+    static Map<String ,List<PhotoEntry>> photoMap=null;
     public List<PhotoEntry> getPhotoList(String id)throws  Exception{
         List<PhotoEntry> result=null;
         if(photoMap!=null){
@@ -130,133 +126,27 @@ public abstract class Job_Google_Abstract extends AbstractJobN{
         // フォーマット num1/denom1,num2/denom2,num3,denom3
         return String.format("%d/1,%d/1,%d/100000", num1, num2, num3);
     }
-    public void upload(String id, String name, String description, File file, String mediaType, double latitude, double longitude, boolean gpsEnable, Calendar cal)throws Exception {
-        if (!isAlreadyUpload(id, name)) {
-        /*    URL albumPostUrl = new URL("https://picasaweb.google.com/data/feed/api/user/default/albumid/"+id);
-
-            PhotoEntry myPhoto = new PhotoEntry();
-            myPhoto.setTitle(new PlainTextConstruct(name));
-            myPhoto.setDescription(new PlainTextConstruct(description));
-            if(gpsEnable){
-                myPhoto.setGeoLocation(latitude,longitude);
-            }
-
-            MediaFileSource myMedia = new MediaFileSource(file, mediaType);
-            myPhoto.setMediaSource(myMedia);
-            if(picasaService!=null) {
-                PhotoEntry returnedPhoto = picasaService.insert(albumPostUrl, myPhoto);
-            }
-            */
-            boolean photoidFlg = false;
-            boolean albumidFlag = false;
-            boolean photourlFlg = false;
-            String photoid = null;
-            String albumid = null;
+    public void upload(String id, String name, String description, File file, String mediaType, double latitude, double longitude, boolean gpsEnable, Calendar cal,String format)throws Exception {
+        if (!isAlreadyUpload(id, name+format)) {
             String photoUrl = null;
-            if ("video/mp4".equals(mediaType)) {
-                photoUrl = uploadVideo(file);
-//                String defalutID = getAlbum(picasaService).get(0).getId();
-//                photoUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + defalutID + "/photoid/" + videoID;
-//                PhotoFeed photoEntry = picasaService.getFeed(new URL(photoUrl), PhotoFeed.class);
-                PhotoEntry photoEntry = GoogleUtil.getPicasaService(service).getEntry(new URL(photoUrl), PhotoEntry.class);
-                photoEntry.setTitle(new PlainTextConstruct(name));
-                photoEntry.setDescription(new PlainTextConstruct(description));
-                photoEntry.setAlbumId(id);
-                photoEntry.setTimestamp(cal.getTime());
-                if (gpsEnable) {
-                    photoEntry.setGeoLocation(latitude, longitude);
-                }
-//                List<GphotoEntry> list=photoEntry.getEntries();
-//                if(list!=null && list.size()>0){
-
-//                }
-                try {
-                    GoogleUtil.getPicasaService(service).getRequestFactory().setHeader("If-Match", "*");
-                    photoEntry.setEtag(null);
-                    photoEntry.update();
-                }finally {
-                    GoogleUtil.getPicasaService(service).getRequestFactory().setHeader("If-Match", null);
-                }
-
+           if ("video/mp4".equals(mediaType)) {
+               uploadVideo(file);
             } else {
-                XmlPullParser xpp = addPhoto(id, file, mediaType);
-                int eventType = xpp.getEventType();
-                while (eventType != XmlPullParser.END_DOCUMENT) {
-                    if (eventType == XmlPullParser.START_TAG) {
-                        if (xpp.getName().equals("id") && ("gphoto".equals(xpp.getPrefix()))) {
-                            photoidFlg = true;
-                        } else if (xpp.getName().equals("albumid") && ("gphoto".equals(xpp.getPrefix()))) {
-                            albumidFlag = true;
-                        } else if (xpp.getName().equals("id")) {
-
-                            photourlFlg = true;
-                        }
-//                    Log.d("NameSpace",xpp.getNamespace());
-//                    Log.d("Name",xpp.getName());
-//                    if((xpp.getPrefix())!=null){
-//                        Log.d("NamePrefix", xpp.getPrefix());
-//                    }
-                    } else if (eventType == XmlPullParser.TEXT) {
-                        if (photoidFlg) {
-                            photoid = xpp.getText();
-                            photoidFlg = false;
-                        } else if (albumidFlag) {
-                            albumid = xpp.getText();
-                            albumidFlag = false;
-                        } else if (photourlFlg) {
-                            photoUrl = xpp.getText();
-                            photourlFlg = false;
-                        }
-                    }
-                    if ((photoid != null) && (albumid != null) && (photoUrl != null)) {
-                        break;
-                    }
-                    eventType = xpp.next();
-                }
-                PhotoEntry photoEntry = GoogleUtil.getPicasaService(service).getEntry(new URL(photoUrl), PhotoEntry.class);
-                photoEntry.setTitle(new PlainTextConstruct(name));
-                photoEntry.setDescription(new PlainTextConstruct(description));
-                photoEntry.setAlbumId(id);
-                photoEntry.setTimestamp(cal.getTime());
-                if (gpsEnable) {
-                    photoEntry.setGeoLocation(latitude, longitude);
-                }
-                photoEntry.update();
+                addPhoto(id, file, mediaType);
             }
-
         }
     }
-//            if("video/mp4".equals(mediaType)) {
-//                if(thumbnailFile!=null) {
-//                    MediaFileSource myThumb = new MediaFileSource(thumbnailFile, "image/jpeg");
-//                    photoEntry.setMediaSource(myThumb);
-//                    photoEntry.setEtag("Narrative_Sumbnail");
-//                    photoEntry = photoEntry.updateMedia(true);
-    //               }
-//                photoEntry.updateMedia(false);
-//                String videoStatus = null;
-//                while ((videoStatus = photoEntry.getVideoStatus()).equals("pending")) {
-//                    if (videoStatus != null)
-//                        Log.d("VideoUpdateStatus", "" + videoStatus);
-    //        Thread.sleep(1000);
-//                }
 
-//            }
-//            photoEntry.update();
-//        }
-
-    private XmlPullParser addPhoto(String id, File image, String type) throws Exception {
-        XmlPullParser xpp=null;
+    private void addPhoto(String id, File image, String type) throws Exception {
         OutputStream os=null;
-        try {
             if (!image.canRead()) {
                 System.err.println("File read error.");
                 System.exit(0);
             }
             String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + id;
-            Log.d("upload","URL:"+image.getAbsolutePath());
+            Log.d("upload","URL:"+albumPostUrl+" BaseFile:"+image.getAbsolutePath());
             // POST header
-            HttpURLConnection con = (HttpURLConnection)
+            con = (HttpURLConnection)
                     new URL(albumPostUrl).openConnection();
             con.setDoInput(true);
             con.setDoOutput(true);
@@ -309,27 +199,15 @@ public abstract class Job_Google_Abstract extends AbstractJobN{
                 //      Log.d("Data:", text);
                 buf.append(text);
             }
-            xpp = Xml.newPullParser();
-            xpp.setInput(new StringReader(buf.toString()));
-
 
             br.close();
-        }catch (Exception ex ){
-            ex.printStackTrace();
-/*            try{
-                Thread.sleep(3000);
-            }catch(Exception ex2){}：
-            */
-            xpp=addPhoto(id, image, type);
-        }
-        return xpp;
     }
-
-    public String uploadVideo(File file) throws Exception {
-        try {
+    HttpURLConnection con=null;
+    public void uploadVideo(File file) throws Exception {
             String sessionUrl = "https://photos.google.com/_/upload/photos/resumable?authuser=0";
+            Log.d("upload","URL:"+sessionUrl+" BaseFile:"+file.getAbsolutePath());
             // POST header
-            HttpURLConnection con = (HttpURLConnection)
+            con = (HttpURLConnection)
                     new URL(sessionUrl).openConnection();
             con.setDoInput(true);
             con.setDoOutput(true);
@@ -402,21 +280,5 @@ public abstract class Job_Google_Abstract extends AbstractJobN{
                 buf2.append(text2);
             }
             Log.d("ResponseBody", "" + buf2.toString());
-            JSONObject json = new JSONObject(buf2.toString());
-            JSONObject addInfo = json.getJSONObject("sessionStatus").getJSONObject("additionalInfo").getJSONObject("uploader_service.GoogleRupioAdditionalInfo").getJSONObject("completionInfo").getJSONObject("customerSpecificInfo");
-            String albumID = addInfo.getString("albumid");
-            String photoID = addInfo.getString("photoid");
-            String videoID = addInfo.getString("videoId");
-
-//        return "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + albumID + "/photoid/" + photoID;
-            return "https://picasaweb.google.com/data/entry/api/user/default/albumid/" + albumID + "/photoid/" + photoID;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-          /*  try {
-                Thread.sleep(3000);
-            } catch (Exception ex2) {
-            }*/
-            return uploadVideo(file);
-        }
     }
 }

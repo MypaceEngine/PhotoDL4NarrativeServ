@@ -5,6 +5,7 @@ import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,17 +13,31 @@ import java.util.List;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract {
+public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract  implements Serializable {
+    private static final long serialVersionUID = 000000000000000000001L;
+
     String momentInfo=null;
     void setInfo(String url,String _momentInfo){
         super.setInfo(url);
         momentInfo=_momentInfo;
     }
-
-    List<AbstractJobN> createJobInfo(JSONObject jsonObj){
+    void run() {
+        Log.d("MainServiceTask", "getPhotoExec:"+url);
+        boolean flag=true;
+        try {
+            JSONObject json = getNarrativetExec(url);
+            this.service.addJobFirst(createJobInfo(json));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            flag=false;
+        }
+        if((flag)&&(!shutdownFlg)){
+            this.service.removeJob(this);
+        }
+    }
+    List<AbstractJobN> createJobInfo(JSONObject jsonObj) throws Exception{
 
         ArrayList<AbstractJobN> jobs=new ArrayList<AbstractJobN>();
-        try {
             GSPContainer gpsData = cnvGPSContainer(new JSONObject(momentInfo));
             this.service.addGPSData(gpsData);
 
@@ -30,13 +45,11 @@ public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract {
             int count = itemArray.length();
             for (int i = 0; i < count; i++) {
                 JSONObject obj = itemArray.getJSONObject(i);
-                String photos_url = obj.getString("photos_url");
-
-
+                //String photos_url = obj.getString("photos_url");
+                Job_ChkNeed_DownloadPhoto nextJob=new Job_ChkNeed_DownloadPhoto();
+                nextJob.setInfo(obj.toString(),gpsData);
+                jobs.add(nextJob);
             }
-        }catch (Exception ex){
-            ex.printStackTrace();
-        }
         return jobs;
     }
     /**

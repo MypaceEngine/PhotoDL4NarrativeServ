@@ -9,6 +9,7 @@
     <string name="desc_enable_resync_oncel">Enable to synchronized on  cellular network.</string>
     <string name="desc_enable_resync_tolocal">Enable to download to local storage. Turing on is not recommended, cellular phone storage volume is not so large.</string>
     <string name="desc_Sync_Btn">Start to sync.</string>
+    <string name="desc_StopSync_Btn">Stop to sync.</string>
     <string name="guide_local_storagepath">Local Folder  Path: </string>
     <string name="guide_local_gotolocal">Go to download folder.</string>
     <string name="desc_enable_google_photo">Enable to resynchronized to google photo of specified google account.</string>

@@ -9,6 +9,7 @@ import com.google.gdata.data.photos.AlbumEntry;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Iterator;
@@ -17,7 +18,9 @@ import java.util.Iterator;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public class Job_DownLoadPhoto extends Job_Download_Abstract {
+public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Serializable {
+    private static final long serialVersionUID = 000000000000000000001L;
+
     String photoInfo;
     GSPContainer gpsData;
 
@@ -47,6 +50,8 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract {
         boolean favorite = photo.getBoolean("favorite");
 
         JSONObject photo_objs = photo.getJSONObject("renders");
+        String takeTime = photo.getString("taken_at_local");
+        Calendar cal = CnvUtil.cnvCalender(takeTime);
 
         if (photo_objs != null) {
             Iterator ite = photo_objs.keys();
@@ -85,9 +90,46 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract {
                 tmpFile.deleteOnExit();
                 Log.d("PhotodownLoad", "TmpFilePath:" + tmpFile);
                 saveNarrativeSrv2File(photoUrl, tmpFile);
+                String description =
+                "Narrative_UUID: " + uuid_photo + "\n" +
+                        "Narrative_Moment_UUID: " + gpsData.uuid + "\n" +
+                        "Narrative_Quality: " + photo_quarity + "\n" +
+                        "Narrative_Address_Country: " + gpsData.getCountry() + "\n" +
+                        "Narrative_Address_City: " + gpsData.getCity() + "\n" +
+                        "Narrative_Address_Street: " + gpsData.getStreet() + "\n" +
+                        "Narrative_Favorite: " + favorite + "\n";
 
+                ExifInterface exifInterface = new ExifInterface(tmpFile.getAbsolutePath());
+                if (gpsData.gpsAvailable) {
+
+                    try {
+                        String ns = "N";
+                        String we = "E";
+
+                        if (gpsData.getLatitude() < 0) {
+                            ns = "S";
+                        }
+                        if (gpsData.getLongitude() < 0) {
+                            we = "W";
+                        }
+                        exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE, CnvUtil.latlong2GeoFormat(Math.abs(gpsData.getLatitude())));
+                        exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, ns);
+                        exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, CnvUtil.latlong2GeoFormat(Math.abs(gpsData.getLongitude())));
+                        exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, we);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                }
+                String exifDate = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss").format(cal.getTime());
+                exifInterface.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL,exifDate);
+                exifInterface.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, description);
+                //exifInterface.setAttribute(ExifInterface.TAG_MAKER_NOTE, "");
+                exifInterface.saveAttributes();
+                tmpFile.setLastModified(cal.getTimeInMillis());
                 Job_UploadPhoto_Google job=new Job_UploadPhoto_Google();
                 job.setInfo(tmpFile.getAbsolutePath(),photoInfo,gpsData);
+                this.service.addJobFirst(job);
             }
         }
     }

@@ -5,6 +5,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -12,7 +13,7 @@ import java.net.URL;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public abstract class Job_Download_Abstract extends AbstractJobN{
+public abstract class Job_Download_Abstract extends AbstractJobN implements Serializable {
     public void saveNarrativeSrv2File(String urlStr, File file) throws Exception {
         Log.d("MainServiceTask","saveNarrativeSrv2File:"+urlStr);
         String seacret = dataUtil.getNarrativeKey();
@@ -72,10 +73,19 @@ public abstract class Job_Download_Abstract extends AbstractJobN{
                 }
             }catch(Exception ex){
                 ex.printStackTrace();
+                try {
+                    file.deleteOnExit();
+                }catch (Exception e2){
+                    e2.printStackTrace();
+                }
      /*           try{
                     Thread.sleep(3000);
                 }catch (Exception ex2){}*/
-                saveNarrativeSrv2File(urlStr, file);
+                if (!shutdownFlg) {
+                    saveNarrativeSrv2File(urlStr, file);
+                }else{
+                    throw ex;
+                }
             }finally{
                 if(con!=null){
                     con.disconnect();

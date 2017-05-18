@@ -39,6 +39,7 @@ public class GoogleUtil {
         }
         return picasaService;
     }
+
     static public String getPicasaAccountName(SyncJobService service) {
         if (googleAccountName != null) {
             return googleAccountName;
@@ -47,6 +48,7 @@ public class GoogleUtil {
         }
         return googleAccountName;
     }
+
     static public String getPicasaToken(SyncJobService service) {
         if (picasaService != null) {
             return googleauthToken;
@@ -56,10 +58,20 @@ public class GoogleUtil {
         return googleauthToken;
     }
 
+    static void invalidateToken() {
+        picasaService = null;
+        googleAccountName = null;
+        googleauthToken = null;
+        if(manager!=null) {
+            manager.invalidateAuthToken("com.google", googleauthToken);
+        }
+    }
+
+    static AccountManager manager=null;
     static private void getToken(SyncJobService service){
         Log.d("MainServiceTask", "GoogleAuthToken");
         DataUtil dataUtil=new DataUtil(service);
-        AccountManager manager = AccountManager.get(service);
+        manager = AccountManager.get(service);
         OnTokenAcquired tokenAcquired=new OnTokenAcquired(service);
         manager.getAuthToken(
                 new Account(dataUtil.getGoogleAccount(), "com.google"),

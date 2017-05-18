@@ -5,6 +5,7 @@ import android.util.Log;
 import android.util.Xml;
 
 import com.google.gdata.data.photos.AlbumEntry;
+import com.google.gdata.util.ServiceForbiddenException;
 
 import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
@@ -14,6 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -25,7 +27,9 @@ import java.util.Iterator;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public class Job_UploadPhoto_Google extends Job_Google_Abstract{
+public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Serializable {
+    private static final long serialVersionUID = 000000000000000000001L;
+
     String tmpPath=null;
     String photoInfo=null;
     GSPContainer gpsData=null;
@@ -45,14 +49,14 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract{
             String takeTime = photoObj.getString("taken_at_local");
             Calendar cal = CnvUtil.cnvCalender(takeTime);
 
-            JSONObject photo_objs=photoObj.getJSONObject("renders");
+//            JSONObject photo_objs=photoObj.getJSONObject("renders");
             String format = ".jpg";
-            Iterator ite = photoObj.keys();
+            Iterator ite = photoObj.getJSONObject("renders").keys();
             int width=0;
             int height=0;
             while (ite.hasNext()) {
                 String size_key = (String) ite.next();
-                JSONObject eachObj = photoObj.getJSONObject(size_key);
+                JSONObject eachObj = photoObj.getJSONObject("renders").getJSONObject(size_key);
                 JSONObject sizeObj = eachObj.getJSONObject("size");
                 if (sizeObj != null) {
                     int photoWidth = sizeObj.getInt("width");
@@ -69,7 +73,7 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract{
             }
 
             File tmpFile = new File(tmpPath);
-            if (gpsData.gpsAvailable) {
+/*            if (gpsData.gpsAvailable) {
 
                 ExifInterface exifInterface = new ExifInterface(tmpFile.getAbsolutePath());
                 try {
@@ -91,15 +95,15 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract{
                     ex.printStackTrace();
                 }
                 exifInterface.saveAttributes();
-            }
-            SimpleDateFormat sdf_Album = new SimpleDateFormat("yyyyMMdd");
-            SimpleDateFormat sdf_Date = new SimpleDateFormat("yyyy/MM/dd");
-            String gAlbumName = "NarrativeClip_" + sdf_Album.format(cal.getTime());
+            }*/
+ //           SimpleDateFormat sdf_Album = new SimpleDateFormat("yyyyMMdd");
+ //           SimpleDateFormat sdf_Date = new SimpleDateFormat("yyyy/MM/dd");
+ //           String gAlbumName = "NarrativeClip_" + sdf_Album.format(cal.getTime());
             String gFileName = "NarrativeClip_Photo_" + uuid_photo;
-            AlbumEntry album = getAlbumAndCreate(gAlbumName, sdf_Date.format(cal.getTime()));
+            AlbumEntry album = getTargetAlbum();
 
             File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);
-            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(album.getGphotoId(), gFileName))) {
+            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(album.getGphotoId(), gFileName+format))) {
                 String description =
                         "Narrative_UUID: " + uuid_photo + "\n" +
                                 "Narrative_Moment_UUID: " + gpsData.uuid + "\n" +
@@ -108,7 +112,7 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract{
                                 "Narrative_Address_City: " + gpsData.getCity() + "\n" +
                                 "Narrative_Address_Street: " + gpsData.getStreet() + "\n" +
                                 "Narrative_Favorite: " + favorite + "\n";
-                this.upload(album.getGphotoId(), gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal);
+                this.upload(album.getGphotoId(), gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal,format);
             }
 
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);
@@ -119,7 +123,10 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract{
                 tmpFile.deleteOnExit();
             } catch (Exception ex) {
             }
-        }catch(Exception e){}
+            this.service.removeJob(this);
+        }catch(ServiceForbiddenException e){
+            GoogleUtil.invalidateToken();
+        }catch(Exception e){e.printStackTrace();}
     }
 
 }

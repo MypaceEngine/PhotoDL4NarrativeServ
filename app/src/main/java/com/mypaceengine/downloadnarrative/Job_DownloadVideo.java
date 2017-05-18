@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -23,17 +24,27 @@ import java.util.List;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public class Job_DownloadVideo extends Job_Download_Abstract {
+public class Job_DownloadVideo extends Job_Download_Abstract implements Serializable {
+    private static final long serialVersionUID = 000000000000000000001L;
+
     String videoInfo=null;
     void setInfo(String _videoInfo){
         videoInfo=_videoInfo;
     }
     void run(){
+        boolean flag = true;
         try {
             List<GSPContainer> gpsList=service.getGPSList();
             JSONObject videoObj = new JSONObject(videoInfo);
             downloadVideo(videoObj, gpsList);
-        }catch (Exception e){}
+            this.service.removeJob(this);
+        }catch (Exception ex){
+            ex.printStackTrace();
+            flag=false;
+        }
+        if ((flag) && (!shutdownFlg)) {
+            this.service.removeJob(this);
+        }
     }
 
     public void downloadVideo(JSONObject video,List<GSPContainer> gpsList)throws Exception{
@@ -102,8 +113,12 @@ public class Job_DownloadVideo extends Job_Download_Abstract {
                     Log.d("PhotodownLoad", "TmpFilePath:" + tmpFile);
                     saveNarrativeSrv2File(photoUrl, tmpFile);
 
+                tmpFile.setLastModified(cal.getTimeInMillis());
+
                 Job_UploadVideo_Google job=new Job_UploadVideo_Google();
                 job.setInfo(tmpFile.getAbsolutePath(),videoInfo,gpsData);
+                this.service.addJobFirst(job);
+
             }
         }
     }

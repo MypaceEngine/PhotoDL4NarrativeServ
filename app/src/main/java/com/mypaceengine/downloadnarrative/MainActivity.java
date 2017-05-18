@@ -129,17 +129,27 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
         localBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Uri selectedUri = Uri.parse(local_filepath);
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(selectedUri, "resource/folder");
-                startActivity(intent);
+                try {
+                    Uri selectedUri = Uri.parse(local_filepath);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(selectedUri, "resource/folder");
+                    startActivity(intent);
+                }catch(Exception ex){
+                    Toast.makeText(getApplicationContext(), "File Manager is not found!", Toast.LENGTH_LONG).show();
+                }
             }
         });
 
         syncBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                registerJobSchedule();
+                JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                if(scheduler.getPendingJob(1)==null){
+                    registerJobSchedule();
+                }else{
+                    stopJobSchedule();
+                }
+                treatBtn();
             }
         });
 
@@ -209,11 +219,28 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
 
         });
         treatBtn();
+
     }
 
     public void treatBtn(){
-        syncBtn.setEnabled((dataUtil.getEnableGoogleSync())||(dataUtil.getEnableLocalSync()));
-        googleAuthBtn.setEnabled(dataUtil.getEnableGoogleSync());
+        JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+        //JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        //JobInfo jobInfo=scheduler.getPendingJob(1);
+        boolean isAlreadySyncTask=(scheduler.getPendingJob(1)!=null);
+        String key=dataUtil.getNarrativeKey();
+        String googleAccount = dataUtil.getGoogleAccount();
+        syncBtn.setEnabled((key!=null)&&(((dataUtil.getEnableGoogleSync())&&(googleAccount!=null))||(dataUtil.getEnableLocalSync())));
+        googleAuthBtn.setEnabled((!isAlreadySyncTask)&&(dataUtil.getEnableGoogleSync()));
+        celSwitch.setEnabled(!isAlreadySyncTask);
+        googleSwitch.setEnabled(!isAlreadySyncTask);
+        localSwitch.setEnabled(!isAlreadySyncTask);
+        narrativeBtn.setEnabled(!isAlreadySyncTask);
+        if(isAlreadySyncTask){
+            syncBtn.setText(getResources().getString(R.string.desc_StopSync_Btn));
+        }else{
+            syncBtn.setText(getResources().getString(R.string.desc_Sync_Btn));
+        }
     }
 
     @Override
@@ -221,22 +248,16 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
         super.onDestroy();
     }
 
-    public void registerJobSchedule(){
-        int netType=JobInfo.NETWORK_TYPE_UNMETERED;
-        if(dataUtil.getEnableCelSync()){
-            netType= JobInfo.NETWORK_TYPE_ANY;
-        }
-        ComponentName mServiceName= new ComponentName(this, SyncJobService.class);
+    public void stopJobSchedule(){
         JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        JobInfo jobInfo = new JobInfo.Builder(1, mServiceName)
-                .setMinimumLatency(1 * 1000)
-                .setOverrideDeadline(60 * 1000)
-                .setRequiredNetworkType(netType)
-                .setPersisted(true)
-                .setRequiresDeviceIdle(true)
-                .setRequiresCharging(true)
-                .build();
-        scheduler.schedule(jobInfo);
+        scheduler.cancel(1);
+        try {
+            this.deleteFile(SyncJobService.DataFile);
+        }catch (Exception ex){}
+    }
+    public void registerJobSchedule(){
+        Toast.makeText(getApplicationContext(), "Please wait for starting sync.", Toast.LENGTH_LONG).show();
+        SyncJobService.registJobSchedule(this);
     }
 
     @Override
@@ -265,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
                                 } catch (AuthenticatorException e) {
                                     e.printStackTrace();
                                 }
+                                treatBtn();
                             }
                         }, null);
             }

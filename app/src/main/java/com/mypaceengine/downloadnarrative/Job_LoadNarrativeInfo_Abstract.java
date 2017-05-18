@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -18,28 +19,13 @@ import java.util.List;
  * Created by MypaceEngine on 2017/05/13.
  */
 
-public abstract class Job_LoadNarrativeInfo_Abstract extends AbstractJobN {
+public abstract class Job_LoadNarrativeInfo_Abstract extends AbstractJobN  implements Serializable {
 
     String url = null;
 
 
     public void setInfo(String _url){
         url = _url;
-    }
-
-    void run() {
-        Log.d("MainServiceTask", "getMomentExec");
-        boolean flag=true;
-        try {
-            JSONObject json = getNarrativetExec(url);
-            this.service.addJobFirst(createJobInfo(json));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            flag=false;
-        }
-        if((flag)&&(!shutdownFlg)){
-            this.service.removeJob(this);
-        }
     }
 
     void stop(){
@@ -58,6 +44,9 @@ public abstract class Job_LoadNarrativeInfo_Abstract extends AbstractJobN {
     public JSONObject getNarrativetExec(String urlStr, int retryCnt) throws Exception {
         Log.d("MainServiceTask", "GetInfo_FromNarrative:" + urlStr);
 
+        if(this.shutdownFlg){
+            throw new Exception();
+        }
         String seacret = dataUtil.getNarrativeKey();
         if (seacret != null) {
 
@@ -112,7 +101,8 @@ public abstract class Job_LoadNarrativeInfo_Abstract extends AbstractJobN {
                 }
                 bufReader.close();
             } catch (Exception ex) {
-                if (retryCnt < 10) {
+                ex.printStackTrace();
+                if ((retryCnt < 10)&&(!this.shutdownFlg)) {
                     getNarrativetExec(urlStr, retryCnt++);
                 } else {
                     throw ex;

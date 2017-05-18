@@ -5,6 +5,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.util.Log;
 
+import java.io.Serializable;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -13,7 +14,9 @@ import java.util.Locale;
  * Created by MypaceEngine on 2016/10/01.
  */
 
-public class GSPContainer implements Comparable{
+public class GSPContainer implements Comparable,Serializable{
+    private static final long serialVersionUID = 000000000000000000001L;
+
     Calendar startCal;
     Calendar endCal;
     String country;

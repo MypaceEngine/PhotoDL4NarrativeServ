@@ -7,6 +7,7 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,26 +17,13 @@ import java.util.regex.Pattern;
 
 public class CnvUtil {
     public static Calendar cnvCalender(String dateStr){
-        String regex = "([0-9]+)-([0-9]+)-([0-9]+)T([0-9]+):([0-9]+):([0-9]+)";
-        Pattern p = Pattern.compile(regex);
-        String year = "";
-        String month = "";
-        String day = "";
-        String hour = "";
-        String min = "";
-        String sec = "";
-        Matcher m = p.matcher(dateStr);
-        if (m.find()) {
-            year = m.group(1);
-            month = m.group(2);
-            day = m.group(3);
-            hour = m.group(4);
-            min = m.group(5);
-            sec = m.group(6);
-        }
         Calendar calendar = Calendar.getInstance();
-        calendar.clear();
-        calendar.set(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day), Integer.parseInt(hour), Integer.parseInt(min),Integer.parseInt(sec));
+        try {
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
+            Date date = df.parse(dateStr);
+            calendar.clear();
+            calendar.setTime(date);
+        }catch (Exception ex){}
         return calendar;
     }
 
