@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.TimeZone;
 
 /**
  * Created by MypaceEngine on 2017/05/13.
@@ -121,6 +122,7 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Seriali
                     }
 
                 }
+                cal.setTimeZone(TimeZone.getTimeZone("GMT"));
                 String exifDate = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss").format(cal.getTime());
                 exifInterface.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL,exifDate);
                 exifInterface.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, description);

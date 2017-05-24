@@ -389,6 +389,7 @@ public class SyncJobService extends JobService {
                 .build();
         scheduler.schedule(jobInfo);
     }
+
     public void stopExec(){
         synchronized (syncObjeTask) {
             List<AbstractJobN> currentTasks = new ArrayList<AbstractJobN>();
@@ -410,6 +411,8 @@ public class SyncJobService extends JobService {
             showEndNotification();
             clearJobList();
             jobFinished(mJobParam, false);
+            JobScheduler scheduler = (JobScheduler) this.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            scheduler.cancel(1);
         }
         try {
             saveGPSList();

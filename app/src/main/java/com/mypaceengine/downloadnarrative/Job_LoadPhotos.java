@@ -50,6 +50,14 @@ public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract  implements S
                 nextJob.setInfo(obj.toString(),gpsData);
                 jobs.add(nextJob);
             }
+        String nextUrlStr=jsonObj.getString("next");
+        if((nextUrlStr!=null)&&(nextUrlStr.length()>0)&&(!url.equals(nextUrlStr))&&(!nextUrlStr.equals("null"))){
+            Log.d("Next","URL:"+nextUrlStr);
+            //Thread.sleep(3000);
+            Job_LoadPhotos nextMoment=new Job_LoadPhotos();
+            nextMoment.setInfo(nextUrlStr,momentInfo);
+            jobs.add(nextMoment);
+        }
         return jobs;
     }
     /**
