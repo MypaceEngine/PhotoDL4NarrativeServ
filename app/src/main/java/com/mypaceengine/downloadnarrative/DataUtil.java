@@ -15,10 +15,11 @@ import java.util.List;
 
 public class DataUtil {
 
-    static Object syncObject=new Object();
-    Context cnx=null;
-    public DataUtil(Context _cnx){
-        cnx=_cnx;
+    static Object syncObject = new Object();
+    Context cnx = null;
+
+    public DataUtil(Context _cnx) {
+        cnx = _cnx;
     }
 
     final static String NARRATIVE_KEY_CODE = "NARRATIVE_KEY_CODE";
@@ -187,6 +188,30 @@ public class DataUtil {
                 e1.printStackTrace();
             }
             return list;
+        }
+    }
+
+    SharedPreferences prefHistory;
+
+    public SharedPreferences getPreferenceHistory() {
+        if (prefHistory == null) {
+            prefHistory = cnx.getSharedPreferences("historys", Context.MODE_PRIVATE);
+        }
+        return prefHistory;
+    }
+
+    public boolean loadBooleanHistory(String key) {
+        synchronized (this) {
+            return getPreferenceHistory().getBoolean(key, false);
+        }
+    }
+
+    public void saveBooleanHistory(String key, boolean value) {
+        synchronized (this) {
+            SharedPreferences.Editor editor = getPreferenceHistory().edit();
+            editor.putBoolean(key, value);
+            editor.apply();
+
         }
     }
 }

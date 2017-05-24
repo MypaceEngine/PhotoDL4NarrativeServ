@@ -47,67 +47,9 @@ import java.util.Map;
 
 public abstract class Job_Google_Abstract extends AbstractJobN implements Serializable {
 
-    private static final String API_PREFIX
-            = "https://picasaweb.google.com/data/feed/api/user/default";
-    static  AlbumEntry targetAlbum=null;
-    public AlbumEntry getTargetAlbum() throws Exception {
-        if(targetAlbum!=null){
-            return targetAlbum;
-        }
-        List<AlbumEntry> albums=GoogleUtil.getAlbum(GoogleUtil.getPicasaService(service));
-        if(albums!=null) {
-            if(albums.size()>0){
-                targetAlbum=albums.get(0);
-            }
-            for (AlbumEntry entry : albums) {
-                if("Auto Backup".equals(entry.getTitle().getPlainText())){
-                    targetAlbum=entry;
-                    break;
-                }
-            }
-        }
-        return targetAlbum;
-    }
-    List<AlbumEntry> albums=null;
 
-    static Map<String ,List<PhotoEntry>> photoMap=null;
-    public List<PhotoEntry> getPhotoList(String id)throws  Exception{
-        List<PhotoEntry> result=null;
-        if(photoMap!=null){
-            result=photoMap.get(id);
-        }
-        if(result==null) {
-            result=new ArrayList<PhotoEntry>();
-            String feedUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + id;
-
-            if (GoogleUtil.getPicasaService(service) != null) {
-                Log.d("FeedURL", feedUrl);
-                AlbumFeed feed = GoogleUtil.getPicasaService(service).getFeed(new URL(feedUrl), AlbumFeed.class);
-                List<GphotoEntry> resultpre = feed.getEntries();
-                for(GphotoEntry entry:resultpre){
-                    result.add(new PhotoEntry(entry));
-                }
-                if(photoMap==null){
-                    photoMap=new HashMap<String ,List<PhotoEntry>>();
-                }
-                photoMap.put(id,result);
-            }
-        }
-        return result;
-    }
-
-    public boolean isAlreadyUpload(String albumID,String name)throws Exception{
-        boolean result=false;
-        List<PhotoEntry> list=getPhotoList(albumID);
-        if(list!=null){
-            for(PhotoEntry entry:list){
-                if(name.equals(entry.getTitle().getPlainText())){
-                    result=true;
-                    break;
-                }
-            }
-        }
-        return result;
+    public boolean isAlreadyUpload(String name)throws Exception{
+        return dataUtil.loadBooleanHistory(name);
     }
 
     public <T extends GphotoFeed> T getFeed(PicasawebService _picasaService, String feedHref,
@@ -126,24 +68,26 @@ public abstract class Job_Google_Abstract extends AbstractJobN implements Serial
         // フォーマット num1/denom1,num2/denom2,num3,denom3
         return String.format("%d/1,%d/1,%d/100000", num1, num2, num3);
     }
-    public void upload(String id, String name, String description, File file, String mediaType, double latitude, double longitude, boolean gpsEnable, Calendar cal,String format)throws Exception {
-        if (!isAlreadyUpload(id, name+format)) {
+    public void upload(String name, String description, File file, String mediaType, double latitude, double longitude, boolean gpsEnable, Calendar cal,String format)throws Exception {
+        if (!isAlreadyUpload(name+format)) {
             String photoUrl = null;
            if ("video/mp4".equals(mediaType)) {
                uploadVideo(file);
             } else {
-                addPhoto(id, file, mediaType);
+                addPhoto(file, mediaType);
             }
+            dataUtil.saveBooleanHistory(name+format,true);
         }
     }
 
-    private void addPhoto(String id, File image, String type) throws Exception {
+    private void addPhoto( File image, String type) throws Exception {
         OutputStream os=null;
             if (!image.canRead()) {
                 System.err.println("File read error.");
                 System.exit(0);
             }
-            String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + id;
+//            String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + id;
+            String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/default";
             Log.d("upload","URL:"+albumPostUrl+" BaseFile:"+image.getAbsolutePath());
             // POST header
             con = (HttpURLConnection)

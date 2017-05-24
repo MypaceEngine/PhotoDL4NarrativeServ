@@ -64,8 +64,7 @@ public class Job_ChkNeed_DownloadVideo extends Job_Google_Abstract implements Se
            // String gFileName = "NarrativeClip_Video_" + uuid_video;
             AlbumEntry album =null;
             if (dataUtil.getEnableGoogleSync()) {
-                album = getTargetAlbum();
-                download = !isAlreadyUpload(album.getGphotoId(), uuid_video+format);
+                download = !isAlreadyUpload(uuid_video+format);
             }
 
             File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);

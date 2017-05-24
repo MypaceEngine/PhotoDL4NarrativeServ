@@ -50,7 +50,6 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
   //          SimpleDateFormat sdf_Date = new SimpleDateFormat("yyyy/MM/dd");
   //          String gAlbumName = "NarrativeClip_" + sdf_Album.format(cal.getTime());
             String gFileName = "NarrativeClip_Video_" + uuid_video;
-            AlbumEntry album = getTargetAlbum();
 
             File tmpFile = new File(tmpPath);
 
@@ -87,7 +86,7 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
 //                        saveNarrativeSrv2File(thumbnailUrl, tmpThumbnailFile);
 //                    }
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);
-            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(album.getGphotoId(), gFileName+format))) {
+            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(gFileName+format))) {
                 double lat = 0;
                 double lon = 0;
                 boolean available = false;
@@ -108,7 +107,7 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
 
                 long millis1 = cal.getTimeInMillis();
                 tmpFile.setLastModified(millis1);
-                this.upload(album.getGphotoId(), gFileName, description, tmpFile, "video/mp4", lat, lon, available, cal,format);
+                this.upload(gFileName, description, tmpFile, "video/mp4", lat, lon, available, cal,format);
             }
 
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);

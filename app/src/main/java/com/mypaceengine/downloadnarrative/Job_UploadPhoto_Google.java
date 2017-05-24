@@ -100,10 +100,9 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
  //           SimpleDateFormat sdf_Date = new SimpleDateFormat("yyyy/MM/dd");
  //           String gAlbumName = "NarrativeClip_" + sdf_Album.format(cal.getTime());
             String gFileName = "NarrativeClip_Photo_" + uuid_photo;
-            AlbumEntry album = getTargetAlbum();
 
             File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);
-            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(album.getGphotoId(), gFileName+format))) {
+            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(gFileName+format))) {
                 String description =
                         "Narrative_UUID: " + uuid_photo + "\n" +
                                 "Narrative_Moment_UUID: " + gpsData.uuid + "\n" +
@@ -112,7 +111,7 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
                                 "Narrative_Address_City: " + gpsData.getCity() + "\n" +
                                 "Narrative_Address_Street: " + gpsData.getStreet() + "\n" +
                                 "Narrative_Favorite: " + favorite + "\n";
-                this.upload(album.getGphotoId(), gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal,format);
+                this.upload(gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal,format);
             }
 
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);
