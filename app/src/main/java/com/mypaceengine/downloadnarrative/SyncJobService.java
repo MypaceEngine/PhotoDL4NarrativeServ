@@ -46,6 +46,8 @@ public class SyncJobService extends JobService {
     NotificationManager mNotificationManager;
     @Override
     public boolean onStartJob(JobParameters params) {
+        Thread.setDefaultUncaughtExceptionHandler(new UncoughtExceptionHandler(this.getApplicationContext()));
+        UncoughtExceptionHandler.postBugReportInBackground(this);
         mJobParam=params;
         dataUtil=new DataUtil(this);
         currentTaskList=new ArrayList<JobTask>();
@@ -63,6 +65,7 @@ public class SyncJobService extends JobService {
             showPendingNotification();
             registJobSchedule(this);
         }
+
         return true;
     }
 
