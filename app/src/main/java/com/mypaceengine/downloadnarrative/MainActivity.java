@@ -17,8 +17,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
 
@@ -40,6 +42,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,6 +52,7 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.AccountPicker;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,16 +88,22 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
     private View mLoginFormView;
 
     private Button narrativeBtn;
-    private Button googleAuthBtn;
-    private Button localBtn;
+//    private Button googleAuthBtn;
+//    private Button localBtn;
     private Button syncBtn;
 
     private Switch celSwitch;
     private Switch googleSwitch;
     private Switch localSwitch;
 
-    private TextView localPathLbl;
+    private RadioButton localPathLbl;
+    private RadioButton localDCIMPathLbl;
+    private RadioButton localPICPathLbl;
 
+    private TextView storageSizeLbl;
+    private TextView accountLbl;
+    private TextView narrative_error;
+    private TextView sizeErrorLbl;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -102,7 +112,9 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
 
     private String narrativeKey;
 
-    private String local_filepath;
+   private String local_filepath;
+    private String dcim_filepath;
+    private String picture_filepath;
 
     static final int GOOGLE_REQUEST_CODE=00000001;
 
@@ -113,32 +125,117 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
         dataUtil=new DataUtil(this);
         setContentView(com.mypaceengine.downloadnarrative.R.layout.activity_main);
 
+        narrative_error=(TextView) findViewById(com.mypaceengine.downloadnarrative.R.id.desc_narrative_text_error_View);
+        if(dataUtil.getNarrativeReauthNeed()){
+            narrative_error.setText(getResources().getString(com.mypaceengine.downloadnarrative.R.string.desc_Resync_need));
+            narrative_error.setVisibility(View.VISIBLE);
+        }else{
+            narrative_error.setText("");
+            narrative_error.setVisibility(View.GONE);
+        }
+
+
         narrativeBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.narrative_authorize_button);
 
-        googleAuthBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.google_authorizeBtn);
+//        googleAuthBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.google_authorizeBtn);
 
         syncBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.startSyncBtn);
 
         local_filepath=getApplicationContext().getExternalFilesDir("photos").getAbsolutePath();
+        dcim_filepath= Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_DCIM + File.separator+Conf.DCIMFolderName+File.separator;
+        picture_filepath=Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_PICTURES + File.separator+Conf.DCIMFolderName+File.separator;
 
-        localPathLbl=(TextView) findViewById(com.mypaceengine.downloadnarrative.R.id.localpath_lbl);
+        String strageSizeStr=
+                "storage Information\nTotal: "+String.format("%,dMB",(int)(Environment.getExternalStorageDirectory().getTotalSpace()/1000000))+
+                " Used: "+String.format("%,dMB",(int)(Environment.getExternalStorageDirectory().getUsableSpace()/1000000))+
+                " Free: "+String.format("%,dMB",(int)(Environment.getExternalStorageDirectory().getFreeSpace()/1000000));
+
+        localPathLbl=(RadioButton) findViewById(com.mypaceengine.downloadnarrative.R.id.localPrivatePath_lbl);
         localPathLbl.setText(getResources().getString(com.mypaceengine.downloadnarrative.R.string.guide_local_storagepath)+local_filepath);
 
-        localBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.localfolder_btn);
+        localDCIMPathLbl=(RadioButton) findViewById(com.mypaceengine.downloadnarrative.R.id.localDCIMPath_lbl);
+        localDCIMPathLbl.setText(getResources().getString(com.mypaceengine.downloadnarrative.R.string.guide_dcim_storagepath)+dcim_filepath);
 
-        localBtn.setOnClickListener(new OnClickListener() {
+        localPICPathLbl=(RadioButton) findViewById(com.mypaceengine.downloadnarrative.R.id.localPICPath_lbl);
+        localPICPathLbl.setText(getResources().getString(com.mypaceengine.downloadnarrative.R.string.guide_pic_storagepath)+picture_filepath);
+
+        storageSizeLbl=(TextView) findViewById(com.mypaceengine.downloadnarrative.R.id.sizeinformation_lbl);
+        storageSizeLbl.setText(strageSizeStr);
+
+        sizeErrorLbl=(TextView) findViewById(com.mypaceengine.downloadnarrative.R.id.desc_size_error_View);
+        if(Environment.getExternalStorageDirectory().getFreeSpace()<Conf.MinimumStorage){
+            sizeErrorLbl.setText(getResources().getString(com.mypaceengine.downloadnarrative.R.string.desc_StorageFreeSpace_need));
+            sizeErrorLbl.setVisibility(View.VISIBLE);
+        }else{
+            sizeErrorLbl.setText("");
+            sizeErrorLbl.setVisibility(View.GONE);
+        }
+
+        if(dataUtil.getFolderType()==DataUtil.FOLDER_DCIM){
+            localDCIMPathLbl.setChecked(true);
+        }else if (dataUtil.getFolderType()==DataUtil.FOLDER_PIC){
+            localPICPathLbl.setChecked(true);
+        }else{
+            localPathLbl.setChecked(true);
+        }
+
+        localPathLbl.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
             @Override
-            public void onClick(View v) {
-                try {
-                    Uri selectedUri = Uri.parse(local_filepath);
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(selectedUri, "resource/folder");
-                    startActivity(intent);
-                }catch(Exception ex){
-                    Toast.makeText(getApplicationContext(), "File Manager is not found!", Toast.LENGTH_LONG).show();
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    dataUtil.setFolderType(DataUtil.FOLDER_LOCAL);
                 }
             }
+
         });
+        localDCIMPathLbl.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    dataUtil.setFolderType(DataUtil.FOLDER_DCIM);
+                }
+            }
+
+        });
+        localPICPathLbl.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    dataUtil.setFolderType(DataUtil.FOLDER_PIC);
+                }
+            }
+
+        });
+
+        accountLbl=(TextView) findViewById(com.mypaceengine.downloadnarrative.R.id.accountinformation_lbl);
+        accountLbl.setText("");
+
+//        localBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.localfolder_btn);
+//        localBtn.setOnClickListener(new OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                try {
+//                    File sharedfolder = null;
+//                    if(localDCIMPathLbl.isChecked()){
+//                        sharedfolder = new File(getApplicationContext().getExternalFilesDir("DCIM"),Conf.DCIMFolderName+File.separator);
+//                    }else if(localPICPathLbl.isChecked()){
+//                        sharedfolder = new File(getApplicationContext().getExternalFilesDir("Pictures"),Conf.DCIMFolderName+File.separator);
+//                    }else{
+//                        sharedfolder = new File(getApplicationContext().getFilesDir(), "photos"+File.separator);
+//                    }
+//                    sharedfolder=new File(Environment.getExternalStorageDirectory(),"DCIM");
+//                    Uri contentUri = FileProvider.getUriForFile(getApplicationContext(), "com.mypaceengine.downloadnarrative", sharedfolder);
+//                    Intent intent = new Intent(Intent.ACTION_VIEW);
+////                    intent.setDataAndType(contentUri, getContentResolver().getType(contentUri));
+//                    intent.setDataAndType(contentUri,"resource/folder");
+//                    intent.addFlags(
+//                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+//                    startActivityForResult(intent, 0);
+//                }catch(Exception ex){
+//                    Toast.makeText(getApplicationContext(), "File Manager is not found!", Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        });
 
         syncBtn.setOnClickListener(new OnClickListener() {
             @Override
@@ -161,7 +258,6 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
 
         mLoginFormView = findViewById(com.mypaceengine.downloadnarrative.R.id.login_form);
         mProgressView = findViewById(com.mypaceengine.downloadnarrative.R.id.login_progress);
-
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -186,14 +282,14 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
 
             }
         });
-        googleAuthBtn.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent =AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"},
-                        false, null, null, null, null);
-                startActivityForResult(intent, MainActivity.GOOGLE_REQUEST_CODE);
-            }
-        });
+//        googleAuthBtn.setOnClickListener(new OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Intent intent =AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"},
+//                        false, null, null, null, null);
+//                startActivityForResult(intent, MainActivity.GOOGLE_REQUEST_CODE);
+//            }
+//        });
 
         localSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
             @Override
@@ -206,8 +302,14 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
         googleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                dataUtil.setEnableGoogleSync(isChecked);
-                treatBtn();
+                if(isChecked) {
+                    Intent intent = AccountPicker.newChooseAccountIntent(null, null, new String[]{"com.google"},
+                            false, null, null, null, null);
+                    startActivityForResult(intent, MainActivity.GOOGLE_REQUEST_CODE);
+                }else {
+                    dataUtil.setEnableGoogleSync(isChecked);
+                    treatBtn();
+                }
             }
 
         });
@@ -230,16 +332,29 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
         boolean isAlreadySyncTask=(scheduler.getPendingJob(1)!=null);
         String key=dataUtil.getNarrativeKey();
         String googleAccount = dataUtil.getGoogleAccount();
-        syncBtn.setEnabled((key!=null)&&(((dataUtil.getEnableGoogleSync())&&(googleAccount!=null))||(dataUtil.getEnableLocalSync())));
-        googleAuthBtn.setEnabled((!isAlreadySyncTask)&&(dataUtil.getEnableGoogleSync()));
+        syncBtn.setEnabled(((key!=null)&&(!dataUtil.getNarrativeReauthNeed()))&&(((dataUtil.getEnableGoogleSync())&&(googleAccount!=null))||(dataUtil.getEnableLocalSync())));
+//        googleAuthBtn.setEnabled((!isAlreadySyncTask)&&(dataUtil.getEnableGoogleSync()));
         celSwitch.setEnabled(!isAlreadySyncTask);
         googleSwitch.setEnabled(!isAlreadySyncTask);
+        String accountName=dataUtil.getGoogleAccount();
+        if((googleSwitch.isChecked()&&accountName.length()>0)){
+            accountLbl.setText(getResources().getString(com.mypaceengine.downloadnarrative.R.string.guide_account_name)+" "+accountName);
+            accountLbl.setVisibility(View.VISIBLE);
+        }else{
+            accountLbl.setText("");
+            accountLbl.setVisibility(View.GONE);
+        }
         localSwitch.setEnabled(!isAlreadySyncTask);
+        localDCIMPathLbl.setEnabled((!isAlreadySyncTask)&&(localSwitch.isChecked()));
+        localPICPathLbl.setEnabled((!isAlreadySyncTask)&&(localSwitch.isChecked()));;
+        localPathLbl.setEnabled((!isAlreadySyncTask)&&(localSwitch.isChecked()));
+
         narrativeBtn.setEnabled(!isAlreadySyncTask);
         if(isAlreadySyncTask){
             syncBtn.setText(getResources().getString(R.string.desc_StopSync_Btn));
         }else{
             syncBtn.setText(getResources().getString(R.string.desc_Sync_Btn));
+
         }
     }
 
@@ -264,31 +379,40 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
     protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         {
-            if (requestCode == GOOGLE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-                AccountManager manager = AccountManager.get(this);
-                manager.getAuthToken(new Account(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME), "com.google"), "lh2", null,
-                        this, new AccountManagerCallback<Bundle>() {
-                            @Override
-                            public void run(AccountManagerFuture<Bundle> future) {
-                                Bundle bundle = null;
-                                try {
-                                    bundle = future.getResult();
-                                    String accountName = bundle.getString(AccountManager.KEY_ACCOUNT_NAME);
-                                    String accountType = bundle.getString(AccountManager.KEY_ACCOUNT_TYPE);
-                                    String authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                                    dataUtil.setGoogleAccounty(accountName);
-                                   // Log.d(accountName, accountType);
-                                   // Log.d("Auth!", authToken);
-                                } catch (OperationCanceledException e) {
-                                    Toast.makeText(getApplicationContext(), getResources().getString(com.mypaceengine.downloadnarrative.R.string.desc_cancel_Auth_google), Toast.LENGTH_LONG).show();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                } catch (AuthenticatorException e) {
-                                    e.printStackTrace();
+            if (requestCode == GOOGLE_REQUEST_CODE ) {
+                if(resultCode == Activity.RESULT_OK) {
+                    AccountManager manager = AccountManager.get(this);
+                    manager.getAuthToken(new Account(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME), "com.google"), "lh2", null,
+                            this, new AccountManagerCallback<Bundle>() {
+                                @Override
+                                public void run(AccountManagerFuture<Bundle> future) {
+                                    Bundle bundle = null;
+                                    try {
+                                        bundle = future.getResult();
+                                        String accountName = bundle.getString(AccountManager.KEY_ACCOUNT_NAME);
+                                        String accountType = bundle.getString(AccountManager.KEY_ACCOUNT_TYPE);
+                                        String authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                                        dataUtil.setGoogleAccounty(accountName);
+                                        // Log.d(accountName, accountType);
+                                        // Log.d("Auth!", authToken);
+                                    } catch (OperationCanceledException e) {
+                                        googleSwitch.setChecked(false);
+                                        Toast.makeText(getApplicationContext(), getResources().getString(com.mypaceengine.downloadnarrative.R.string.desc_cancel_Auth_google), Toast.LENGTH_LONG).show();
+                                    } catch (IOException e) {
+                                        googleSwitch.setChecked(false);
+                                        e.printStackTrace();
+                                    } catch (AuthenticatorException e) {
+                                        googleSwitch.setChecked(false);
+                                        e.printStackTrace();
+                                    }
+                                    dataUtil.setEnableGoogleSync(true);
+                                    treatBtn();
                                 }
-                                treatBtn();
-                            }
-                        }, null);
+                            }, null);
+                }else{
+                    googleSwitch.setChecked(false);
+                    treatBtn();
+                }
             }
         }
     }

@@ -32,6 +32,11 @@ public class DataUtil {
     final static String NAS_SYNC_FLAG = "NAS_SYNC_FLAG";
     final static String CEL_SYNC_FLAG = "CEL_SYNC_FLAG";
 
+    final static String FOLDER_TYPE ="FOLDER_TYPE";
+    final static int FOLDER_LOCAL=0;
+    final static int FOLDER_DCIM=1;
+    final static int FOLDER_PIC=2;
+
     public final static String NARRATIVE_COOKIE = "NARRATIVE_COOKIE";
 
     public void setNarrativeKey(String key) {
@@ -79,7 +84,12 @@ public class DataUtil {
     public void setNarrativeReauthNeed(boolean flag) {
         saveBoolean(NARRATIVE_REAUTH_REQUIRE, flag);
     }
-
+    public void setFolderType(int type){
+        saveInt(FOLDER_TYPE, type);
+    }
+    public void setPreviousFolderType(int type){
+        saveInt(FOLDER_TYPE, type);
+    }
     public void setNarrativeCookie(ArrayList<String> list) {
         saveList(NARRATIVE_COOKIE, list);
     }
@@ -102,6 +112,14 @@ public class DataUtil {
 
     public boolean getNarrativeReauthNeed() {
         return loadBoolean(NARRATIVE_REAUTH_REQUIRE, true);
+    }
+
+    public int getFolderType() {
+        return loadInt(FOLDER_TYPE, FOLDER_LOCAL);
+    }
+
+    public int getPreviousFolderType() {
+        return loadInt(FOLDER_TYPE, FOLDER_LOCAL);
     }
 
     public ArrayList<String> getNarrativeCookie() {
@@ -141,6 +159,14 @@ public class DataUtil {
         }
     }
 
+    public void saveInt(String key, int value) {
+        synchronized (this) {
+            SharedPreferences.Editor editor = getPreference().edit();
+            editor.putInt(key, value);
+            editor.apply();
+        }
+    }
+
     public void saveList(String key, List<String> list) {
         synchronized (this) {
             JSONArray array = new JSONArray();
@@ -170,6 +196,12 @@ public class DataUtil {
     public long loadLong(String key, long defaultValue) {
         synchronized (this) {
             return getPreference().getLong(key, defaultValue);
+        }
+    }
+
+    public int loadInt(String key, int defaultValue) {
+        synchronized (this) {
+            return getPreference().getInt(key, defaultValue);
         }
     }
 

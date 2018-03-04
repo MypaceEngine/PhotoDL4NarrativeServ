@@ -30,6 +30,13 @@
                 android:text="@string/desc_narrative_Auth"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textColor="@color/font" />
+            <TextView
+                android:id="@+id/desc_narrative_text_error_View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/desc_narrative_Auth"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="@color/font_error" />
 
             <Button
                 android:id="@+id/narrative_authorize_button"
@@ -69,15 +76,55 @@
                 android:layout_width="match_parent"
                 android:layout_height="5dp"
                 android:layout_gravity="center_horizontal" />
-
             <TextView
-                android:id="@+id/localpath_lbl"
+                android:id="@+id/sizeinformation_lbl"
+                style="?android:textAppearanceSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/font"/>
+            <TextView
+                android:id="@+id/desc_size_error_View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/desc_narrative_Auth"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="@color/font_error" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#eeeeee">
+                <RadioGroup android:id="@+id/radiogroup"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/localPrivatePath_lbl"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/guide_local_storagepath"
-                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textAppearance="?android:attr/textAppearanceSmall"
                 android:textColor="@color/font" />
 
+            <RadioButton
+                android:id="@+id/localDCIMPath_lbl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/guide_local_storagepath"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="@color/font" />
+
+            <RadioButton
+                android:id="@+id/localPICPath_lbl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/guide_local_storagepath"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="@color/font" />
+                </RadioGroup>
+                </LinearLayout>
+
+ <!--
             <Button
                 android:id="@+id/localfolder_btn"
                 style="?android:textAppearanceSmall"
@@ -85,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/guide_local_gotolocal"
                 android:textStyle="bold" />
-
+-->
 
             <Space
                 android:layout_width="match_parent"
@@ -97,14 +144,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/desc_enable_google_photo"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            <Button
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+            <TextView
+                android:id="@+id/accountinformation_lbl"
+                style="?android:textAppearanceSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/font"/>
+<!--            <Button
                 android:id="@+id/google_authorizeBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:text="@string/desc_google_Btn" />
+-->
 
 
             <Space

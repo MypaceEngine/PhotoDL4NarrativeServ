@@ -15,12 +15,14 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.BatteryManager;
+import android.os.Environment;
 import android.os.StatFs;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -59,6 +61,9 @@ public class SyncJobService extends JobService {
             if ((list != null) && (list.size() > 0)) {
                 execNextTask();
             } else {
+                File tmp_BASEDIR = this.getApplicationContext().getExternalFilesDir(Conf.TempolaryFolderName);
+                FileUtil.deleteFolder(tmp_BASEDIR);
+
                 execFirstTask();
             }
         }else{
@@ -145,8 +150,7 @@ public class SyncJobService extends JobService {
     }
     public boolean chkEnableTask(){
 
-        StatFs sf = new StatFs(this.getApplicationContext().getExternalFilesDir(Conf.TempolaryFolderName).getAbsolutePath());
-        long kb = sf.getFreeBytes();
+        long kb = Environment.getExternalStorageDirectory().getFreeSpace();
         Log.d("Storage Free Capacity",  kb+"byte");
 
         String key=dataUtil.getNarrativeKey();
@@ -162,7 +166,7 @@ public class SyncJobService extends JobService {
         reauthNeed=false;
         return
                 (key!=null)&&
-                        (kb>1024*1024*1024)&&
+                        (kb>Conf.MinimumStorage)&&
                         ((nInfo!=null)&&(nInfo.isConnected())&&((nInfo.getType()==ConnectivityManager.TYPE_WIFI)||dataUtil.getEnableCelSync()));
 
     }

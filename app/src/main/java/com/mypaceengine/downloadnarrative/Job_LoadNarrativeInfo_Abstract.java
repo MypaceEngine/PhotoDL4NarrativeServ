@@ -83,12 +83,10 @@ public abstract class Job_LoadNarrativeInfo_Abstract extends AbstractJobN  imple
 
                 Log.d("Narrative Responce", String.format("%s[%d]", responseMessage, responseCode));
 
-                switch (responseCode) {
-                    case HttpURLConnection.HTTP_UNAUTHORIZED:
+                if ((responseCode == HttpURLConnection.HTTP_UNAUTHORIZED)||(responseCode == HttpURLConnection.HTTP_NOT_FOUND)){
                         //TODO handle unauthorized
                         dataUtil.setNarrativeReauthNeed(true);
                         throw new Exception();
-                    default:
                 }
                 in = con.getInputStream();
 
