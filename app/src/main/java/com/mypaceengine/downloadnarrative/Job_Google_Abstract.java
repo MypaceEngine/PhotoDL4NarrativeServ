@@ -26,6 +26,7 @@ import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -74,21 +75,65 @@ public abstract class Job_Google_Abstract extends AbstractJobN implements Serial
            if ("video/mp4".equals(mediaType)) {
                uploadVideo(file);
             } else {
-                addPhoto(file, mediaType);
+                addPhoto(file, mediaType,name,description, latitude,  longitude,  gpsEnable,  cal);
             }
             dataUtil.saveBooleanHistory(name+format,true);
         }
     }
 
-    private void addPhoto( File image, String type) throws Exception {
+    private void addPhoto( File image, String type,String name,String description,double latitude, double longitude, boolean gpsEnable, Calendar cal) throws Exception {
         OutputStream os=null;
-            if (!image.canRead()) {
+/*            if (!image.canRead()) {
                 System.err.println("File read error.");
                 System.exit(0);
-            }
+            }*/
+
 //            String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/" + id;
-            String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/default";
+//            String albumPostUrl = "https://picasaweb.google.com/data/feed/api/user/default/albumid/default";
+        String albumPostUrl =getAlbumURL();
+        if(albumPostUrl==null){
+            throw new Exception();
+        }
             Log.d("upload","URL:"+albumPostUrl+" BaseFile:"+image.getAbsolutePath());
+ /*       PhotoEntry myPhoto = new PhotoEntry();
+        myPhoto.setTitle(new PlainTextConstruct(name));
+       myPhoto.setDescription(new PlainTextConstruct(description));
+        if(gpsEnable) {
+            myPhoto.setGeoLocation(latitude,longitude);
+        }
+        myPhoto.setTimestamp(cal.getTime());
+//        myPhoto.setClient("myClientName");
+
+        MediaFileSource myMedia = new MediaFileSource(image, type);
+        myPhoto.setMediaSource(myMedia);
+
+        PhotoEntry returnedPhoto = GoogleUtil.getPicasaService(service).insert(new URL(albumPostUrl), myPhoto);*/
+        FileInputStream fis = new FileInputStream(image);
+        int i;
+        byte[] buff = new byte[8192];
+        ByteArrayOutputStream outBuf=new ByteArrayOutputStream();
+
+        outBuf.write("Media multipart posting\r\n".getBytes());
+        outBuf.write("--END_OF_PART\r\n".getBytes());
+        outBuf.write("Content-Type: application/atom+xml\r\n\r\n".getBytes());
+        outBuf.write("<entry xmlns='http://www.w3.org/2005/Atom'>\r\n".getBytes());
+        outBuf.write(("<title>"+name+"</title>\r\n").getBytes());
+        outBuf.write(("<summary>"+description+"</summary>\r\n").getBytes());
+        outBuf.write("<category scheme=\"http://schemas.google.com/g/2005#kind\"\r\n".getBytes());
+        outBuf.write("term=\"http://schemas.google.com/photos/2007#photo\"/>\r\n".getBytes());
+        outBuf.write("</entry>\r\n".getBytes());
+        outBuf.write("--END_OF_PART\r\n".getBytes());
+        outBuf.write(("Content-Type: " + type + "\r\n\r\n").getBytes());
+
+
+        while ((i = fis.read(buff)) > 0)
+            outBuf.write(buff, 0, i);
+        //        os.write(buff, 0, i);
+
+        outBuf.write("\r\n--END_OF_PART--".getBytes());
+
+        byte[] data=outBuf.toByteArray();
+
             // POST header
             con = (HttpURLConnection)
                     new URL(albumPostUrl).openConnection();
@@ -98,40 +143,23 @@ public abstract class Job_Google_Abstract extends AbstractJobN implements Serial
             con.setRequestProperty("Authorization", "GoogleLogin auth=" + GoogleUtil.getPicasaToken(service));
 //        con.setRequestProperty("Content-type", type);
             con.setRequestProperty("Content-Type", "multipart/related; boundary=\"END_OF_PART\"");
-//        con.setRequestProperty("Content-Length",""+image.length()+385);
+            con.setRequestProperty("Content-Length",""+data.length);
             con.setRequestProperty("MIME-version", "1.0");
 
-            con.setRequestProperty("Slug", image.getName());
+//            con.setRequestProperty("Slug", image.getName());
 
             // POST body (copied from file stream)
-            int i;
-            byte[] buff = new byte[8192];
-            FileInputStream fis = new FileInputStream(image);
+
             os = con.getOutputStream();
-            os.write("Media multipart posting\r\n".getBytes());
-            os.write("--END_OF_PART\r\n".getBytes());
-            os.write("Content-Type: application/atom+xml\r\n\r\n".getBytes());
 
-            os.write("<entry xmlns='http://www.w3.org/2005/Atom'>\r\n".getBytes());
-//        os.write("<title>plz-to-love-realcat.jpg</title>\r\n".getBytes());
-//        os.write("<summary>Real cat wants attention too.</summary>\r\n".getBytes());
-            os.write("<category scheme=\"http://schemas.google.com/g/2005#kind\"\r\n".getBytes());
-            os.write("term=\"http://schemas.google.com/photos/2007#photo\"/>\r\n".getBytes());
-            os.write("</entry>\r\n".getBytes());
-            os.write("--END_OF_PART\r\n".getBytes());
-            os.write(("Content-Type: " + type + "\r\n\r\n").getBytes());
+            os.write(data);
 
-
-            while ((i = fis.read(buff)) > 0)
-                os.write(buff, 0, i);
-//        os.write(buff, 0, i);
-
-            os.write("\r\n--END_OF_PART--".getBytes());
             os.flush();
             os.close();
             Log.d("ResponseCode",""+con.getResponseCode());
 
-
+            fis.close();
+            outBuf.close();
 
 
             // Read response (still needed)
@@ -145,6 +173,7 @@ public abstract class Job_Google_Abstract extends AbstractJobN implements Serial
             }
 
             br.close();
+
     }
     HttpURLConnection con=null;
     public void uploadVideo(File file) throws Exception {
@@ -224,5 +253,18 @@ public abstract class Job_Google_Abstract extends AbstractJobN implements Serial
                 buf2.append(text2);
             }
             Log.d("ResponseBody", "" + buf2.toString());
+    }
+    static String albumURL=null;
+    public String getAlbumURL(){
+        try {
+            if(albumURL==null) {
+                List<AlbumEntry> list = GoogleUtil.getAlbum(GoogleUtil.getPicasaService(service));
+                albumURL=list.get(0).getId();
+                albumURL=albumURL.replace("entry","feed/api");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return albumURL;
     }
 }

@@ -11,16 +11,17 @@
     <string name="desc_Sync_Btn">Start to sync.</string>
     <string name="desc_StopSync_Btn">Stop to sync.</string>
     <string name="desc_Resync_need">Token of Narrative service is already expired. Please authenticate again on Narrative Service.</string>
-    <string name="desc_StorageFreeSpace_need">For downloading to local storage, more than 1GB free space is needed.</string>
+    <string name="desc_StorageFreeSpace_need">For using this application, more than 1GB free space is needed.</string>
     <string name="guide_local_storagepath">Application Local Folder:\n </string>
     <string name="guide_dcim_storagepath">DCIM Folder:\n </string>
     <string name="guide_pic_storagepath">Picture Folder:\n </string>
     <string name="guide_local_gotolocal">Go to download folder.</string>
-    <string name="desc_enable_google_photo">Enable to synchronized to google photo of specified google account. If you enable this option, photo data will be uploaded and not be stored on local storage (except data cache). If you enable downloading to local storage, you do not need to enable this option, Android will automatically upload to Google Photo of your account.</string>
+    <string name="desc_enable_google_photo">Enable to synchronized to google photo of specified google account. If you enable this option and turn off downloading to local storage, photo data will be uploaded to Google Photo and not be stored on local storage (except data cache). If you enable downloading to local storage, you do not need to enable this option, Android will automatically upload to Google Photo of your account.</string>
     <string name="desc_cancel_Auth_google">For uploading photo to google photo, Authenticating google account is needed.</string>
     <string name="desc_enable_nas">Enable to resynchronized to network attached storage.</string>
     <string name="guide_local_setaccount">Register account</string>
     <string name="guide_account_name">Account Name: </string>
+    <string name="desc_energy_charging">[Notice] While charging battery only , synchronization service will be executed </string>
 
     <string name="prompt_email">User ID</string>
     <string name="prompt_password">Password</string>

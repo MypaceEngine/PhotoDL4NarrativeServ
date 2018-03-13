@@ -1,5 +1,6 @@
 package com.mypaceengine.downloadnarrative;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
@@ -10,16 +11,19 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
@@ -117,6 +121,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
     private String picture_filepath;
 
     static final int GOOGLE_REQUEST_CODE=00000001;
+    static final int LOCAL_REQUEST_PERMISSION = 00000002;
 
     DataUtil dataUtil=null;
     @Override
@@ -141,9 +146,9 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
 
         syncBtn=(Button) findViewById(com.mypaceengine.downloadnarrative.R.id.startSyncBtn);
 
-        local_filepath=getApplicationContext().getExternalFilesDir("photos").getAbsolutePath();
-        dcim_filepath= Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_DCIM + File.separator+Conf.DCIMFolderName+File.separator;
-        picture_filepath=Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_PICTURES + File.separator+Conf.DCIMFolderName+File.separator;
+        local_filepath=CnvUtil.getProgramLocalFilePath(this);
+        dcim_filepath= CnvUtil.getDCIMFilePath();
+        picture_filepath=CnvUtil.getPictureFilePath();
 
         String strageSizeStr=
                 "storage Information\nTotal: "+String.format("%,dMB",(int)(Environment.getExternalStorageDirectory().getTotalSpace()/1000000))+
@@ -184,6 +189,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked) {
                     dataUtil.setFolderType(DataUtil.FOLDER_LOCAL);
+                    dispCopyDialog();
                 }
             }
 
@@ -193,6 +199,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked) {
                     dataUtil.setFolderType(DataUtil.FOLDER_DCIM);
+                    requestStoragePermission();
                 }
             }
 
@@ -202,6 +209,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked) {
                     dataUtil.setFolderType(DataUtil.FOLDER_PIC);
+                    requestStoragePermission();
                 }
             }
 
@@ -324,6 +332,43 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
 
     }
 
+    public void requestStoragePermission(){
+        if (!(ActivityCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)){
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, LOCAL_REQUEST_PERMISSION);
+        }else{
+            dispCopyDialog();
+        }
+    }
+    public void dispCopyDialog(){
+
+        int previous=dataUtil.getPreviousFolderType();
+        int current=dataUtil.getFolderType();
+        String message="Would you like to move files from \"";
+
+        message+=CnvUtil.getFilePathFromType(this,previous);
+        message+="\" to \"";
+        message+=CnvUtil.getFilePathFromType(this,current);
+        message+="\".";
+
+        if(previous!=current) {
+            if((new File(CnvUtil.getFilePathFromType(this,previous))).exists()){
+                new AlertDialog.Builder(this)
+                        .setTitle("Confirm")
+                        .setMessage(message)
+                        .setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dataUtil.setFileMoveRequire(true);
+                            }
+                        })
+                        .setNegativeButton("NO", null)
+                        .show();
+            }
+        }else{
+            dataUtil.setFileMoveRequire(false);
+        }
+    }
     public void treatBtn(){
         JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
 
@@ -364,11 +409,7 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
     }
 
     public void stopJobSchedule(){
-        JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        scheduler.cancel(1);
-        try {
-            this.deleteFile(SyncJobService.DataFile);
-        }catch (Exception ex){}
+        SyncJobService.cancelService(this);
     }
     public void registerJobSchedule(){
         Toast.makeText(getApplicationContext(), "Please wait for starting sync.", Toast.LENGTH_LONG).show();
@@ -456,6 +497,13 @@ public class MainActivity extends AppCompatActivity implements LoaderCallbacks<C
         if (requestCode == REQUEST_READ_CONTACTS) {
             if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 populateAutoComplete();
+            }
+        }else if (requestCode == LOCAL_REQUEST_PERMISSION) {
+            // 使用が許可された
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                dispCopyDialog();
+            } else {
+                localPathLbl.setChecked(true);
             }
         }
     }

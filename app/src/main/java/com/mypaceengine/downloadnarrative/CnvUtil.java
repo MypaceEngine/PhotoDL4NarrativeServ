@@ -1,6 +1,7 @@
 package com.mypaceengine.downloadnarrative;
 
 import android.content.Context;
+import android.os.Environment;
 
 import com.google.common.io.Files;
 
@@ -27,7 +28,7 @@ public class CnvUtil {
         return calendar;
     }
 
-    public static File cnvFilePath(Context context, String baseFolderName, Calendar cal, String format) throws Exception{
+    public static File cnvFilePathTmp(Context context, String baseFolderName, Calendar cal, String format) throws Exception{
 
         SimpleDateFormat sdf_Year = new SimpleDateFormat("yyyy");
         SimpleDateFormat sdf_Month = new SimpleDateFormat("MM");
@@ -35,6 +36,18 @@ public class CnvUtil {
         SimpleDateFormat sdf_File= new SimpleDateFormat("hhmmss");
 
         File result=context.getExternalFilesDir(baseFolderName+ File.separator + sdf_Year.format(cal.getTime())+File.separator+sdf_Month.format(cal.getTime()) + File.separator + sdf_Day.format(cal.getTime()) + File.separator);
+        Files.createParentDirs(result);
+        return new File(result.getAbsolutePath()+File.separator+ sdf_File.format(cal.getTime()) + format);
+    }
+
+    public static File cnvFilePath_Data(String baseFolderName, Calendar cal, String format) throws Exception{
+
+        SimpleDateFormat sdf_Year = new SimpleDateFormat("yyyy");
+        SimpleDateFormat sdf_Month = new SimpleDateFormat("MM");
+        SimpleDateFormat sdf_Day= new SimpleDateFormat("dd");
+        SimpleDateFormat sdf_File= new SimpleDateFormat("hhmmss");
+
+        File result=new File(baseFolderName + sdf_Year.format(cal.getTime())+File.separator+sdf_Month.format(cal.getTime()) + File.separator + sdf_Day.format(cal.getTime()) + File.separator);
         Files.createParentDirs(result);
         return new File(result.getAbsolutePath()+File.separator+ sdf_File.format(cal.getTime()) + format);
     }
@@ -50,5 +63,24 @@ public class CnvUtil {
         int num3 = (int)num3d;
         // フォーマット num1/denom1,num2/denom2,num3,denom3
         return String.format("%d/1,%d/1,%d/100000", num1, num2, num3);
+    }
+
+    public static String getProgramLocalFilePath(Context context){
+        return context.getExternalFilesDir(Conf.PhotoFolderName).getAbsolutePath()+File.separator;
+    }
+    public static String getDCIMFilePath(){
+        return Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_DCIM + File.separator+Conf.DCIMFolderName+File.separator;
+    }
+    public static String getPictureFilePath(){
+        return Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_PICTURES + File.separator+Conf.DCIMFolderName+File.separator;
+    }
+    public static String getFilePathFromType(Context context,int type){
+        if(type==DataUtil.FOLDER_DCIM){
+            return getDCIMFilePath();
+        }else if(type==DataUtil.FOLDER_PIC){
+            return getPictureFilePath();
+        }else{
+            return getProgramLocalFilePath(context);
+        }
     }
 }

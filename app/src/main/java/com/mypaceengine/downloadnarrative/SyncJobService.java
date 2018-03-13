@@ -55,58 +55,58 @@ public class SyncJobService extends JobService {
         currentTaskList=new ArrayList<JobTask>();
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-        if(chkEnableTask()) {
-            loadGPSList();
-            List<AbstractJobN> list = loadJobList();
-            if ((list != null) && (list.size() > 0)) {
-                execNextTask();
-            } else {
-                File tmp_BASEDIR = this.getApplicationContext().getExternalFilesDir(Conf.TempolaryFolderName);
-                FileUtil.deleteFolder(tmp_BASEDIR);
-
-                execFirstTask();
-            }
-        }else{
-            showPendingNotification();
-            registJobSchedule(this);
-        }
-
-        return true;
-    }
-
-    public void execFirstTask() {
-        if(dataUtil.getNarrativeReauthNeed()){
+        boolean result=true;
+        if(dataUtil.getNarrativeReauthNeed()) {
+            showReqestNarrativeAuthNotification();
             jobFinished(mJobParam, false);
+            result=false;
         }else if(dataUtil.getEnableLocalSync()||(dataUtil.getEnableGoogleSync()&&(dataUtil.getGoogleAccount()!=null))) {
-            if(this.chkEnableTask()) {
-                showExecutingNotification();
-                Log.d("NarrativeDwnService", "First Task Start");
-                Job_LoadMoments firstTask = new Job_LoadMoments();
-                firstTask.setInfo("https://narrativeapp.com/api/v2/moments/");
-                this.addJob(firstTask);
+            if(chkEnableTask()) {
+                loadGPSList();
+                List<AbstractJobN> list = loadJobList();
+                if (list.size() == 0) {
+                    if(dataUtil.getFileMoveRequire()) {
+                        Job_Movefolder job = new Job_Movefolder();
+                        jobList.add(0, job);
+                    }
+                    Log.d("NarrativeDwnService", "First Task Start");
 
-                JobTask currentTask = new JobTask();
-                currentTask.initialize(this);
-                firstTask.preExecute(this);
-//                currentTask.execute(firstTask, firstTask, firstTask);
-                currentTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,firstTask, firstTask, firstTask);
-                currentTaskList.add(currentTask);
+                    Job_LoadMoments firstTask = new Job_LoadMoments();
+                    firstTask.setInfo("https://narrativeapp.com/api/v2/moments/");
+                    firstTask.setFirstFlag();
+                    this.addJob(firstTask);
+
+                    AbstractJobN nextjob = pickupJob();
+                    nextjob.preExecute(this);
+
+                    JobTask currentTask = new JobTask();
+                    currentTask.initialize(this);
+
+                    currentTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, nextjob, nextjob, nextjob);
+                    currentTaskList.add(currentTask);
+                }else{
+                    execNextTask();
+                }
             }else{
-                stopExec();
+                showPendingNotification();
+                jobFinished(mJobParam,true);
             }
         }else{
             Log.d("NarrativeDwnService","First Task Not Start");
             jobFinished(mJobParam, false);
+            result=false;
         }
+        return result;
     }
+
 
     public void execNextTask() {
 
         if(!isCanceled) {
             if(dataUtil.getNarrativeReauthNeed()) {
+                showReqestNarrativeAuthNotification();
                 jobFinished(mJobParam, false);
             }else {
-                showExecutingNotification();
                 if(dataUtil.getEnableLocalSync()||(dataUtil.getEnableGoogleSync()&&(dataUtil.getGoogleAccount()!=null))) {
                     if(this.chkEnableTask()) {
                         synchronized (syncObjeTask) {
@@ -116,7 +116,7 @@ public class SyncJobService extends JobService {
                                 currentTasks.add(currentTaskList.get(i).getJob());
                             }
 
-                            List<AbstractJobN> nextJobs = pickupJob(currentTasks, 1 - taskNum);
+                            List<AbstractJobN> nextJobs = pickupJob(currentTasks, 1);
                             if (nextJobs.size() > 0) {
                                 Log.d("NarrativeDwnService", "Next Task Start");
                                 for (int j = 0; j < nextJobs.size(); j++) {
@@ -128,13 +128,26 @@ public class SyncJobService extends JobService {
                                     currentTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,nextJob, nextJob, nextJob);
                                     currentTaskList.add(currentTask);
                                 }
-                            } else if (currentTaskList.size() == 0) {
+                            } else if( (currentTaskList.size() == 0)&&(jobList.size()==0)) {
+                                clearJobList();
+                                showEndNotification();
                                 Log.d("NarrativeDwnService", "Next Task Not Start (Empty)");
                                 jobFinished(mJobParam, false);
                             }
                         }
                     }else{
-                        stopExec();
+                        showPendingNotification();
+                        try {
+                            this.saveJobList();
+                        }catch (Exception ex){
+                            ex.printStackTrace();
+                        }
+                        try {
+                            saveGPSList();
+                        }catch (Exception ex){
+                            ex.printStackTrace();
+                        }
+                        jobFinished(mJobParam, true);
                     }
                 } else {
                     Log.d("NarrativeDwnService", "Next Task Not Start (OFF)");
@@ -216,6 +229,7 @@ public class SyncJobService extends JobService {
                         e.printStackTrace();
                     } finally {
                         try {
+
                             if (objectOutputstream != null) {
                                 objectOutputstream.close();
                             }
@@ -331,7 +345,7 @@ public class SyncJobService extends JobService {
                         fileInputstream.close();
                     }
                 } catch (Exception ex) {
-
+                    ex.printStackTrace();
                 }
             }
             if (gpsList == null) {
@@ -386,18 +400,30 @@ public class SyncJobService extends JobService {
         ComponentName mServiceName= new ComponentName(context, SyncJobService.class);
         JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         scheduler.cancel(1);
+        try {
+            context.deleteFile(SyncJobService.DataFile);
+        }catch (Exception ex){
+
+        }
         JobInfo jobInfo = new JobInfo.Builder(1, mServiceName)
                 .setMinimumLatency(1 * 1000)
                 .setOverrideDeadline(60 * 1000)
                 .setRequiredNetworkType(netType)
                 .setPersisted(true)
-                .setRequiresDeviceIdle(true)
+//                .setRequiresDeviceIdle(true)
                 .setRequiresCharging(true)
                 .build();
         scheduler.schedule(jobInfo);
     }
 
-    public void stopExec(){
+    public static void cancelService(Context context){
+        JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        scheduler.cancelAll();
+    }
+
+    @Override
+    public boolean onStopJob(JobParameters params) {
+        boolean resultflag=true;
         synchronized (syncObjeTask) {
             List<AbstractJobN> currentTasks = new ArrayList<AbstractJobN>();
             for (int i = 0; i < currentTaskList.size(); i++) {
@@ -406,20 +432,18 @@ public class SyncJobService extends JobService {
         }
         boolean result=isAvailableJobList();
         if(result){
-            showPendingNotification();
+//            showPendingNotification();
             try {
                 this.saveJobList();
             }catch (Exception ex){
                 ex.printStackTrace();
             }
-            jobFinished(mJobParam, false);
-            registJobSchedule(this);
+            jobFinished(mJobParam, true);
         }else{
             showEndNotification();
             clearJobList();
             jobFinished(mJobParam, false);
-            JobScheduler scheduler = (JobScheduler) this.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            scheduler.cancel(1);
+            resultflag=false;
         }
         try {
             saveGPSList();
@@ -428,19 +452,21 @@ public class SyncJobService extends JobService {
         }
 
         isCanceled=true;
+        return resultflag;
+    }
 
-    }
-    @Override
-    public boolean onStopJob(JobParameters params) {
-        stopExec();
-        if(dataUtil.getNarrativeReauthNeed()) {
-            showReqestNarrativeAuthNotification();
-        }
-        return false;
-    }
-    public void showExecutingNotification(){
+
+    public void showExecutingFolderCopy(){
         Calendar calendar = Calendar.getInstance();
-        showNotification("Sync is Executing","Last Updating:"+calendar.getTime().toString());
+        showNotification("Folder is moving....","Last Updating:"+calendar.getTime().toString());
+    }
+    public void showExecutingNotification_DownLoad(Calendar cal){
+        Calendar calendar = Calendar.getInstance();
+        showNotification("Downloading... Photo date:"+cal.getTime().toString(),"Last Updating:"+calendar.getTime().toString());
+    }
+    public void showExecutingNotification_LoadMoment(){
+        Calendar calendar = Calendar.getInstance();
+        showNotification("Loading photo data...","Last Updating:"+calendar.getTime().toString());
     }
     public void showEndNotification(){
         Calendar calendar = Calendar.getInstance();
@@ -448,7 +474,7 @@ public class SyncJobService extends JobService {
     }
     public void showPendingNotification(){
         Calendar calendar = Calendar.getInstance();
-        showNotification("Sync is Pending.","Last Updating:"+calendar.getTime().toString());
+        showNotification("Sync is Pending...","Last Updating:"+calendar.getTime().toString());
     }
     public void showReqestNarrativeAuthNotification(){
         Calendar calendar = Calendar.getInstance();

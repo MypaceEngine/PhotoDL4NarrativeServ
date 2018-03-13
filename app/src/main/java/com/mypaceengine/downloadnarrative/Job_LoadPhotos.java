@@ -22,6 +22,7 @@ public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract  implements S
         momentInfo=_momentInfo;
     }
     void run() {
+        service.showExecutingNotification_LoadMoment();
         Log.d("MainServiceTask", "getPhotoExec:"+url);
         boolean flag=true;
         try {
@@ -38,18 +39,20 @@ public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract  implements S
     List<AbstractJobN> createJobInfo(JSONObject jsonObj) throws Exception{
 
         ArrayList<AbstractJobN> jobs=new ArrayList<AbstractJobN>();
-            GSPContainer gpsData = cnvGPSContainer(new JSONObject(momentInfo));
-            this.service.addGPSData(gpsData);
-
-            JSONArray itemArray = jsonObj.getJSONArray("results");
-            int count = itemArray.length();
-            for (int i = 0; i < count; i++) {
-                JSONObject obj = itemArray.getJSONObject(i);
-                //String photos_url = obj.getString("photos_url");
-                Job_ChkNeed_DownloadPhoto nextJob=new Job_ChkNeed_DownloadPhoto();
-                nextJob.setInfo(obj.toString(),gpsData);
-                jobs.add(nextJob);
-            }
+        JSONObject momentObj=new JSONObject(momentInfo);
+        GSPContainer gpsData = cnvGPSContainer(momentObj);
+        this.service.addGPSData(gpsData);
+        String uuid=momentObj.getString("uuid");
+        JSONArray itemArray = jsonObj.getJSONArray("results");
+        Job_ChkNeed_DownloadPhoto nextJob=null;
+        int count = itemArray.length();
+        for (int i = 0; i < count; i++) {
+            JSONObject obj = itemArray.getJSONObject(i);
+            //String photos_url = obj.getString("photos_url");
+            nextJob = new Job_ChkNeed_DownloadPhoto();
+            nextJob.setInfo(obj.toString(), gpsData);
+            jobs.add(nextJob);
+        }
         String nextUrlStr=jsonObj.getString("next");
         if((nextUrlStr!=null)&&(nextUrlStr.length()>0)&&(!url.equals(nextUrlStr))&&(!nextUrlStr.equals("null"))){
             Log.d("Next","URL:"+nextUrlStr);
@@ -57,6 +60,8 @@ public class Job_LoadPhotos extends Job_LoadNarrativeInfo_Abstract  implements S
             Job_LoadPhotos nextMoment=new Job_LoadPhotos();
             nextMoment.setInfo(nextUrlStr,momentInfo);
             jobs.add(nextMoment);
+        }else{
+            nextJob.setMoment_end(uuid);
         }
         return jobs;
     }

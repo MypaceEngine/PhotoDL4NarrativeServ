@@ -20,11 +20,15 @@ public class Job_ChkNeed_DownloadPhoto extends Job_Google_Abstract implements Se
 
     String photoInfo=null;
     GSPContainer gpsData;
+    String moment_end=null;
     void setInfo(String _photoInfo,GSPContainer _gpsData){
         photoInfo=_photoInfo;
         gpsData=_gpsData;
     }
 
+    void setMoment_end(String _moment_end){
+        moment_end=_moment_end;
+    }
     void run(){
         boolean download=false;
         try {
@@ -32,6 +36,7 @@ public class Job_ChkNeed_DownloadPhoto extends Job_Google_Abstract implements Se
             String uuid_photo = photoObj.getString("uuid");
             String takeTime = photoObj.getString("taken_at_local");
             Calendar cal = CnvUtil.cnvCalender(takeTime);
+
             String format = ".jpg";
             Iterator ite = photoObj.getJSONObject("renders").keys();
             int width = 0;
@@ -60,18 +65,29 @@ public class Job_ChkNeed_DownloadPhoto extends Job_Google_Abstract implements Se
 //            String gFileName = "NarrativeClip_Photo_" + uuid_photo;
             AlbumEntry album = null;
             if (this.dataUtil.getEnableGoogleSync()) {
-                download = !isAlreadyUpload(uuid_photo + format);
-            }
-            File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);
-            if (!download) {
-
-                if (dataUtil.getEnableLocalSync()) {
-                    download = !movetoTarget.exists();
+                boolean googleUpdate = isAlreadyUpload(uuid_photo + format);
+                if((moment_end!=null)&&(googleUpdate)){
+                    dataUtil.saveBooleanHistory("Google_"+moment_end,true);
                 }
+                download = !googleUpdate;
+            }
+            File movetoTarget = CnvUtil.cnvFilePath_Data(CnvUtil.getFilePathFromType(service,dataUtil.getFolderType()), cal, format);
+
+            boolean localFlag=false;
+            if (dataUtil.getEnableLocalSync()) {
+                localFlag = movetoTarget.exists();
+                if((moment_end!=null)&&(localFlag)){
+                    dataUtil.saveBooleanHistory("Local_"+moment_end,true);
+                }
+            }
+
+            if (!download) {
+                download=!localFlag;
             }
             if (download) {
                 Job_DownLoadPhoto job = new Job_DownLoadPhoto();
                 job.setInfo(photoInfo, gpsData);
+                job.setMoment_end(this.moment_end);
                 service.addJobFirst(job);
             }
             service.removeJob(this);

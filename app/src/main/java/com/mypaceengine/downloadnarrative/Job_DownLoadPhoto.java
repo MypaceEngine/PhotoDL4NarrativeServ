@@ -24,12 +24,15 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Seriali
 
     String photoInfo;
     GSPContainer gpsData;
+    String moment_end=null;
 
     void setInfo(String _photoInfo, GSPContainer _gpsData) {
         photoInfo = _photoInfo;
         gpsData = _gpsData;
     }
-
+    void setMoment_end(String _moment_end){
+        moment_end=_moment_end;
+    }
     void run() {
         boolean flag = true;
         try {
@@ -53,6 +56,8 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Seriali
         JSONObject photo_objs = photo.getJSONObject("renders");
         String takeTime = photo.getString("taken_at_local");
         Calendar cal = CnvUtil.cnvCalender(takeTime);
+
+        service.showExecutingNotification_DownLoad(cal);
 
         if (photo_objs != null) {
             Iterator ite = photo_objs.keys();
@@ -88,7 +93,10 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Seriali
                 File tmp_BASEDIR = service.getApplicationContext().getExternalFilesDir(Conf.TempolaryFolderName);
                 Files.createParentDirs(tmp_BASEDIR);
                 File tmpFile = new File(tmp_BASEDIR.getAbsolutePath() + File.separator + uuid_photo + format);
-                tmpFile.deleteOnExit();
+                tmpFile.delete();
+                do{
+                    Thread.sleep(50);
+                }while(tmpFile.exists());
                 Log.d("PhotodownLoad", "TmpFilePath:" + tmpFile);
                 saveNarrativeSrv2File(photoUrl, tmpFile);
                 String description =
@@ -131,6 +139,7 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Seriali
                 tmpFile.setLastModified(cal.getTimeInMillis());
                 Job_UploadPhoto_Google job=new Job_UploadPhoto_Google();
                 job.setInfo(tmpFile.getAbsolutePath(),photoInfo,gpsData);
+                job.setMoment_end(this.moment_end);
                 this.service.addJobFirst(job);
             }
         }

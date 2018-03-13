@@ -51,7 +51,6 @@
                 android:layout_height="30dp"
                 android:layout_gravity="center_horizontal" />
 
-
             <Switch
                 android:id="@+id/enable_cell_switch"
                 android:layout_width="match_parent"
@@ -104,7 +103,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/guide_local_storagepath"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/font" />
+                 />
 
             <RadioButton
                 android:id="@+id/localDCIMPath_lbl"
@@ -112,7 +111,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/guide_local_storagepath"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/font" />
+                 />
 
             <RadioButton
                 android:id="@+id/localPICPath_lbl"
@@ -120,7 +119,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/guide_local_storagepath"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/font" />
+                 />
                 </RadioGroup>
                 </LinearLayout>
 
@@ -172,6 +171,12 @@
                 android:layout_gravity="center_horizontal"
                 android:text="@string/desc_Sync_Btn" />
 
+            <TextView
+                style="?android:textAppearanceSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/font"
+                android:text="@string/desc_energy_charging"/>
 
         </LinearLayout>
     </ScrollView>

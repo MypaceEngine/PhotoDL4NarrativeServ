@@ -74,7 +74,7 @@ public abstract class Job_Download_Abstract extends AbstractJobN implements Seri
             }catch(Exception ex){
                 ex.printStackTrace();
                 try {
-                    file.deleteOnExit();
+                    file.delete();
                 }catch (Exception e2){
                     e2.printStackTrace();
                 }
@@ -87,14 +87,14 @@ public abstract class Job_Download_Abstract extends AbstractJobN implements Seri
                     throw ex;
                 }
             }finally{
-                if(con!=null){
-                    con.disconnect();
+                if(fileOutputstream!=null){
+                    fileOutputstream.close();
                 }
                 if(in!=null){
                     in.close();
                 }
-                if(fileOutputstream!=null){
-                    fileOutputstream.close();
+                if(con!=null){
+                    con.disconnect();
                 }
             }
 

@@ -33,12 +33,15 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
     String tmpPath=null;
     String photoInfo=null;
     GSPContainer gpsData=null;
+    String moment_end=null;
     public void setInfo(String _tmpPath,String _photoInfo,GSPContainer _gpsData){
         tmpPath=_tmpPath;
         photoInfo=_photoInfo;
         gpsData=_gpsData;
     }
-
+    void setMoment_end(String _moment_end){
+        moment_end=_moment_end;
+    }
     void run(){
         try {
             JSONObject photoObj=new JSONObject(photoInfo);
@@ -101,7 +104,7 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
  //           String gAlbumName = "NarrativeClip_" + sdf_Album.format(cal.getTime());
             String gFileName = "NarrativeClip_Photo_" + uuid_photo;
 
-            File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);
+            File movetoTarget = CnvUtil.cnvFilePath_Data(CnvUtil.getFilePathFromType(service,dataUtil.getFolderType()), cal, format);
             if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(gFileName+format))) {
                 String description =
                         "Narrative_UUID: " + uuid_photo + "\n" +
@@ -112,14 +115,21 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
                                 "Narrative_Address_Street: " + gpsData.getStreet() + "\n" +
                                 "Narrative_Favorite: " + favorite + "\n";
                 this.upload(gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal,format);
+
+                if(moment_end!=null){
+                    dataUtil.saveBooleanHistory("Google_"+moment_end,true);
+                }
             }
 
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);
-            if (dataUtil.getEnableLocalSync() && (!movetoTarget.exists())) {
-                tmpFile.renameTo(movetoTarget);
+            if (dataUtil.getEnableLocalSync()) {
+                FileUtil.fileMoveWithFileName(tmpFile,movetoTarget);
+                if(moment_end!=null){
+                    dataUtil.saveBooleanHistory("Local_"+moment_end,true);
+                }
             }
             try {
-                tmpFile.deleteOnExit();
+                tmpFile.delete();
             } catch (Exception ex) {
             }
             this.service.removeJob(this);

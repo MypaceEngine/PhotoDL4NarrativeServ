@@ -67,7 +67,7 @@ public class Job_ChkNeed_DownloadVideo extends Job_Google_Abstract implements Se
                 download = !isAlreadyUpload(uuid_video+format);
             }
 
-            File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);
+            File movetoTarget = CnvUtil.cnvFilePath_Data(CnvUtil.getFilePathFromType(service,dataUtil.getFolderType()), cal, format);
             if(!download) {
 
                 if (dataUtil.getEnableLocalSync()) {

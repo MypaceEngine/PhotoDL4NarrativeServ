@@ -58,6 +58,8 @@ public class Job_DownloadVideo extends Job_Download_Abstract implements Serializ
 
         Calendar cal=CnvUtil.cnvCalender(startTime);
 
+        service.showExecutingNotification_DownLoad(cal);
+
         GSPContainer gpsData=null;
         for(int i=0;i<gpsList.size();i++){
             if(gpsList.get(i).isIncluded(cal)){
@@ -109,7 +111,10 @@ public class Job_DownloadVideo extends Job_Download_Abstract implements Serializ
                     File tmp_BASEDIR = service.getApplicationContext().getExternalFilesDir(Conf.TempolaryFolderName);
                     Files.createParentDirs(tmp_BASEDIR);
                     File tmpFile = new File(tmp_BASEDIR.getAbsolutePath() + File.separator + uuid_video + format);
-                    tmpFile.deleteOnExit();
+                    tmpFile.delete();
+                do{
+                    Thread.sleep(50);
+                }while(tmpFile.exists());
                     Log.d("PhotodownLoad", "TmpFilePath:" + tmpFile);
                     saveNarrativeSrv2File(photoUrl, tmpFile);
 

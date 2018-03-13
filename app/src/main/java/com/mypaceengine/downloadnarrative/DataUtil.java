@@ -33,6 +33,8 @@ public class DataUtil {
     final static String CEL_SYNC_FLAG = "CEL_SYNC_FLAG";
 
     final static String FOLDER_TYPE ="FOLDER_TYPE";
+    final static String PREVIOUS_FOLDER_TYPE ="PREVIOUS_FOLDER_TYPE";
+    final static String FILE_MOVE_REQUIRE ="FILE_MOVE_REQUIRE";
     final static int FOLDER_LOCAL=0;
     final static int FOLDER_DCIM=1;
     final static int FOLDER_PIC=2;
@@ -88,8 +90,12 @@ public class DataUtil {
         saveInt(FOLDER_TYPE, type);
     }
     public void setPreviousFolderType(int type){
-        saveInt(FOLDER_TYPE, type);
+        saveInt(PREVIOUS_FOLDER_TYPE, type);
     }
+    public void setFileMoveRequire(boolean flag){
+        saveBoolean(FILE_MOVE_REQUIRE, flag);
+    }
+
     public void setNarrativeCookie(ArrayList<String> list) {
         saveList(NARRATIVE_COOKIE, list);
     }
@@ -119,7 +125,11 @@ public class DataUtil {
     }
 
     public int getPreviousFolderType() {
-        return loadInt(FOLDER_TYPE, FOLDER_LOCAL);
+        return loadInt(PREVIOUS_FOLDER_TYPE, FOLDER_LOCAL);
+    }
+
+    public boolean getFileMoveRequire() {
+        return loadBoolean(FILE_MOVE_REQUIRE, false);
     }
 
     public ArrayList<String> getNarrativeCookie() {

@@ -79,7 +79,7 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
                     }
                 }
             }
-            File movetoTarget = CnvUtil.cnvFilePath(service.getApplicationContext(), Conf.PhotoFolderName, cal, format);
+            File movetoTarget = CnvUtil.cnvFilePath_Data(CnvUtil.getFilePathFromType(service,dataUtil.getFolderType()), cal, format);
             //                    File tmpThumbnailFile =null;
 //                    if(thumbnailUrl!=null) {
 //                        tmpThumbnailFile=new File(tmp_BASEDIR.getAbsolutePath() + File.separator + "thumbnail.jpg");
@@ -111,12 +111,13 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
             }
 
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);
-            if (dataUtil.getEnableLocalSync() && (!movetoTarget.exists())) {
-                tmpFile.renameTo(movetoTarget);
+            if (dataUtil.getEnableLocalSync()) {
+                FileUtil.fileMoveWithFileName(tmpFile,movetoTarget);
             }
             try {
-                tmpFile.deleteOnExit();
+                tmpFile.delete();
             } catch (Exception ex) {
+                ex.printStackTrace();
             }
             this.service.removeJob(this);
         }catch(ServiceForbiddenException e){
