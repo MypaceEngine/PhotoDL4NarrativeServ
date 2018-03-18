@@ -79,10 +79,11 @@ public class Job_ChkNeed_DownloadPhoto extends Job_Google_Abstract implements Se
                 if((moment_end!=null)&&(localFlag)){
                     dataUtil.saveBooleanHistory("Local_"+moment_end,true);
                 }
+                localFlag=!localFlag;
             }
 
             if (!download) {
-                download=!localFlag;
+                download=localFlag;
             }
             if (download) {
                 Job_DownLoadPhoto job = new Job_DownLoadPhoto();

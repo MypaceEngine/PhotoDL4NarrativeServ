@@ -69,15 +69,15 @@ public abstract class Job_Google_Abstract extends AbstractJobN implements Serial
         // フォーマット num1/denom1,num2/denom2,num3,denom3
         return String.format("%d/1,%d/1,%d/100000", num1, num2, num3);
     }
-    public void upload(String name, String description, File file, String mediaType, double latitude, double longitude, boolean gpsEnable, Calendar cal,String format)throws Exception {
-        if (!isAlreadyUpload(name+format)) {
+    public void upload(String uuid,String name, String description, File file, String mediaType, double latitude, double longitude, boolean gpsEnable, Calendar cal,String format)throws Exception {
+        if (!isAlreadyUpload(uuid+format)) {
             String photoUrl = null;
            if ("video/mp4".equals(mediaType)) {
                uploadVideo(file);
             } else {
                 addPhoto(file, mediaType,name,description, latitude,  longitude,  gpsEnable,  cal);
             }
-            dataUtil.saveBooleanHistory(name+format,true);
+            dataUtil.saveBooleanHistory(uuid+format,true);
         }
     }
 

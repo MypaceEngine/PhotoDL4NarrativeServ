@@ -86,7 +86,7 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
 //                        saveNarrativeSrv2File(thumbnailUrl, tmpThumbnailFile);
 //                    }
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);
-            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(gFileName+format))) {
+            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(uuid_video+format))) {
                 double lat = 0;
                 double lon = 0;
                 boolean available = false;
@@ -107,7 +107,7 @@ public class Job_UploadVideo_Google extends Job_Google_Abstract implements Seria
 
                 long millis1 = cal.getTimeInMillis();
                 tmpFile.setLastModified(millis1);
-                this.upload(gFileName, description, tmpFile, "video/mp4", lat, lon, available, cal,format);
+                this.upload(uuid_video,gFileName, description, tmpFile, "video/mp4", lat, lon, available, cal,format);
             }
 
             Log.d("PhotodownLoad", "DataFilePath:" + movetoTarget);

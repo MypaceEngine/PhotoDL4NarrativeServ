@@ -105,7 +105,7 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
             String gFileName = "NarrativeClip_Photo_" + uuid_photo;
 
             File movetoTarget = CnvUtil.cnvFilePath_Data(CnvUtil.getFilePathFromType(service,dataUtil.getFolderType()), cal, format);
-            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(gFileName+format))) {
+            if (dataUtil.getEnableGoogleSync() && (!this.isAlreadyUpload(uuid_photo+format))) {
                 String description =
                         "Narrative_UUID: " + uuid_photo + "\n" +
                                 "Narrative_Moment_UUID: " + gpsData.uuid + "\n" +
@@ -114,7 +114,7 @@ public class Job_UploadPhoto_Google extends Job_Google_Abstract implements Seria
                                 "Narrative_Address_City: " + gpsData.getCity() + "\n" +
                                 "Narrative_Address_Street: " + gpsData.getStreet() + "\n" +
                                 "Narrative_Favorite: " + favorite + "\n";
-                this.upload(gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal,format);
+                this.upload(uuid_photo,gFileName, description, tmpFile, "image/jpeg", gpsData.getLatitude(), gpsData.getLongitude(), gpsData.gpsAvailable, cal,format);
 
                 if(moment_end!=null){
                     dataUtil.saveBooleanHistory("Google_"+moment_end,true);
