@@ -65,6 +65,18 @@ public class Job_DownLoadPhoto extends Job_Download_Abstract  implements Seriali
             int height = 0;
             String photoUrl = null;
             String format = ".jpg";
+            if(photo_objs.has("g1_hd")){
+                JSONObject obj=photo_objs.getJSONObject("g1_hd");
+                JSONObject sizeObj = obj.getJSONObject("size");
+                if (sizeObj != null) {
+                    width = sizeObj.getInt("width");
+                    height = sizeObj.getInt("height");
+                    photoUrl = obj.getString("url");
+                    if (obj.has("format")) {
+                        format = "." + obj.getString("format");
+                    }
+                }
+            }
 
             while (ite.hasNext()) {
                 String size_key = (String) ite.next();
